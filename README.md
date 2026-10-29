@@ -1,713 +1,549 @@
-# 🐟 闲鱼自动回复系统
+# 闲鱼自动回复系统
 
-[![GitHub](https://img.shields.io/badge/GitHub-zhinianboke%2Fxianyu--auto--reply-blue?logo=github)](https://github.com/zhinianboke/xianyu-auto-reply)
-[![Docker](https://img.shields.io/badge/Docker-一键部署-blue?logo=docker)](https://github.com/zhinianboke/xianyu-auto-reply#-快速开始)
-[![Python](https://img.shields.io/badge/Python-3.11+-green?logo=python)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-仅供学习-red.svg)](#️-版权声明与使用条款)
+基于 FastAPI + React + MySQL + Redis + Playwright 的闲鱼多账号自动化系统。
 
-## 最新代码获取地址（尽量转存）
+主系统负责账号管理、消息收发、自动回复、自动发货、商品发布与后台管理；`promotion` 子项目负责返佣账号、选品规则、素材库、发布规则、删除规则和相关修复任务。
 
-https://pan.baidu.com/s/1I6muOGJQYd6y3oxQSmtvrQ?pwd=gcpd
+## 🔴 说明
 
-> **⚠️ 重要提示：本项目仅供学习研究使用，严禁商业用途！使用前请仔细阅读[版权声明](#️-版权声明与使用条款)。**
+> **🔴 诚邀各位开发者提交pr，完善系统**
+>
+> **🔴 承接各类项目定制，各类项目均可，有需要可联系，另外我菜，不一定都会**
 
-一个功能完整的闲鱼自动回复和管理系统，支持多用户、多账号管理，具备智能回复、自动发货、自动确认发货、商品管理等企业级功能。
+## 🔴 最新源码地址(建议转存)
 
-## ✨ 核心特性
+> 🔴 我用夸克网盘给你分享了「自动发货」，点击链接或复制整段内容，打开「夸克网盘APP」即可获取。
+> 
+> 🔴 /~79313YhCQU~:/
+> 
+> 🔴 **链接：https://pan.quark.cn/s/af567356cba7**
 
-### 🔐 多用户系统
-- **用户注册登录** - 支持邮箱验证码注册，图形验证码保护
-- **数据完全隔离** - 每个用户的数据独立存储，互不干扰
-- **权限管理** - 严格的用户权限控制和JWT认证
-- **安全保护** - 防暴力破解、会话管理、安全日志
+## 交流群
 
-### 📱 多账号管理
-- **无限账号支持** - 每个用户可管理多个闲鱼账号
-- **独立运行** - 每个账号独立监控，互不影响
-- **实时状态** - 账号连接状态实时监控
-- **批量操作** - 支持批量启动、停止账号任务
+| 微信群 | QQ群 | 微信公众号 | Telegram | 赞赏支持 |
+|:---:|:---:|:---:|:---:|:---:|
+| ![微信群](https://xy.zhinianboke.com/static/qrcode/wechat-group.png) | ![QQ群](https://xy.zhinianboke.com/static/qrcode/qq-group.jpg) | ![微信公众号](https://xy.zhinianboke.com/static/qrcode/wechat-official-group.jpg) | ![Telegram](https://xy.zhinianboke.com/static/qrcode/telegram-group.png) | ![赞赏支持](https://xy.zhinianboke.com/static/qrcode/reward-group.png) |
+| 扫码加好友拉微信交流群 | 扫码加入QQ交流群 | 关注公众号发送"最新源码"获取最新代码 | 扫码加入Telegram群 | 如果觉得好用，请作者喝杯咖啡 |
 
-### 🤖 智能回复系统
-- **关键词匹配** - 支持精确关键词匹配回复
-- **指定商品回复** - 支持为特定商品设置专门的回复内容，优先级最高
-- **商品专用关键词** - 支持为特定商品设置专用关键词回复
-- **通用关键词** - 支持全局通用关键词，适用于所有商品
-- **批量导入导出** - 支持Excel格式的关键词批量导入导出
-- **AI智能回复** - 集成OpenAI API，支持上下文理解
-- **变量替换** - 回复内容支持动态变量（用户名、商品信息、商品ID等）
-- **优先级策略** - 指定商品回复 > 商品专用关键词 > 通用关键词 > 默认回复 > AI回复
+如群二维码过期，请关注公众号获取最新群链接。
 
-### 🚚 自动发货功能
-- **智能匹配** - 基于商品信息自动匹配发货规则
-- **多规格支持** - 支持同一商品的不同规格自动匹配对应卡券
-- **精确匹配+兜底机制** - 优先精确匹配规格，失败时自动降级到普通卡券
-- **延时发货** - 支持设置发货延时时间（0-3600秒）
-- **多种触发** - 支持付款消息、小刀消息等多种触发条件
-- **防重复发货** - 智能防重复机制，避免重复发货
-- **多种发货方式** - 支持固定文字、批量数据、API调用、图片发货等方式
-- **图片发货** - 支持上传图片并自动发送给买家，图片自动上传到CDN
-- **自动确认发货** - 检测到付款后自动调用闲鱼API确认发货，支持锁机制防并发
-- **防重复确认** - 智能防重复确认机制，避免重复API调用
-- **订单详情缓存** - 订单详情获取支持数据库缓存，大幅提升性能
-- **发货统计** - 完整的发货记录和统计功能
+---
 
-### 🛍️ 商品管理
-- **自动收集** - 消息触发时自动收集商品信息
-- **API获取** - 通过闲鱼API获取完整商品详情
-- **多规格支持** - 支持多规格商品的规格信息管理
-- **批量管理** - 支持批量查看、编辑、切换多规格状态
-- **智能去重** - 自动去重，避免重复存储
+## 功能概览
 
-### 🔍 商品搜索功能
-- **真实数据获取** - 基于Playwright技术获取真实闲鱼商品数据
-- **智能排序** - 按"人想要"数量自动倒序排列
-- **多页搜索** - 支持一次性获取多页商品数据
-- **前端分页** - 灵活的前端分页显示
-- **商品详情** - 支持查看完整商品详情信息
+### 主系统
 
-### 📊 系统监控
-- **实时日志** - 完整的操作日志记录和查看
-- **性能监控** - 系统资源使用情况监控
-- **健康检查** - 服务状态健康检查
+| 模块 | 说明 |
+|------|------|
+| 多账号管理 | 支持多个闲鱼账号登录、状态切换、Cookie 维护与登录续期 |
+| 自动回复 | 支持文本关键词、图片关键词、默认回复、商品专属回复 |
+| AI 回复 | 支持大模型上下文对话与智能回复 |
+| 自动发货 | 支持卡券、虚拟商品、自动补发、发送结果记录 |
+| 在线聊天 | 支持会话列表、消息收发、聊天联动 |
+| 商品发布 | 支持素材库、地址库、单品发布、批量发布、发布日志 |
+| 订单与评价 | 订单拉取、自动评价、求小红花、状态跟踪 |
+| 商品采集与分销 | Goofish 采集、货源管理、对接记录、结算链路 |
+| 通知与风控 | 支持消息通知、风控日志、系统反馈与公告管理 |
 
-### 📁 数据管理
-- **Excel导入导出** - 支持关键词数据的Excel格式导入导出
-- **模板生成** - 自动生成包含示例数据的导入模板
-- **批量操作** - 支持批量添加、更新关键词数据
-- **数据验证** - 导入时自动验证数据格式和重复性
-- **多规格卡券管理** - 支持创建和管理多规格卡券
-- **发货规则管理** - 支持多规格发货规则的创建和管理
-- **数据备份** - 自动数据备份和恢复
-- **一键部署** - 提供预构建Docker镜像，无需编译即可快速部署
+### 返佣子系统
 
-## 📁 项目结构
+| 模块 | 说明 |
+|------|------|
+| 返佣账号 | 返佣账号登录、状态管理、Cookie 维护 |
+| 选品规则 | 按规则抓取候选商品并自动写入素材库 |
+| 素材库 | 管理标题、图片、详情、淘口令、短链、库存、发布状态 |
+| 发布规则 | 定时发布返佣商品，复用公共发布能力 |
+| 删除规则 | 定时删除已发布商品 |
+| 补偿任务 | 已发布商品 ID 回写、短链修复、卡券补偿等 |
 
-<details>
-<summary>点击展开查看详细项目结构</summary>
+## 技术栈
 
-```
+### 后端与自动化
+
+| 技术 | 说明 |
+|------|------|
+| FastAPI | 主系统与返佣后端 API 服务 |
+| SQLAlchemy 2.0 | ORM 与数据库访问 |
+| MySQL 8.0 | 主数据存储 |
+| Redis 7 | 缓存、会话与任务辅助 |
+| Playwright | 登录、Cookie 刷新、发布等浏览器自动化 |
+| APScheduler | 定时任务调度 |
+| Loguru | 日志管理 |
+
+### 前端
+
+| 技术 | 说明 |
+|------|------|
+| React 18 + TypeScript | 主系统与返佣前端 |
+| Vite | 开发与构建 |
+| TailwindCSS | 主系统 UI 样式 |
+| Zustand | 状态管理 |
+| Lucide React | 图标体系 |
+
+### 部署
+
+| 技术 | 说明 |
+|------|------|
+| Docker / Docker Compose | 容器化部署 |
+| Nginx | 前端静态资源与反向代理 |
+
+## 系统要求
+
+### 开发环境
+
+- Python 3.11+
+- Node.js 18+
+- MySQL 8.0+
+- Redis 6+
+- Chromium / Chrome（Playwright 相关功能）
+
+### 生产环境
+
+- Docker 20.10+
+- Docker Compose 2.0+
+- 最低 2 核 CPU / 4GB 内存
+- 推荐 4 核 CPU / 8GB 内存
+
+## 项目结构
+
+```text
 xianyu-auto-reply/
-├── 📄 核心文件
-│   ├── Start.py                    # 项目启动入口，初始化所有服务
-│   ├── XianyuAutoAsync.py         # 闲鱼WebSocket连接和消息处理核心
-│   ├── reply_server.py            # FastAPI Web服务器和完整API接口
-│   ├── db_manager.py              # SQLite数据库管理，支持多用户数据隔离
-│   ├── cookie_manager.py          # 多账号Cookie管理和任务调度
-│   ├── ai_reply_engine.py         # AI智能回复引擎，支持多种AI模型
-│   ├── file_log_collector.py      # 实时日志收集和管理系统
-│   ├── config.py                  # 全局配置文件管理器
-│   ├── secure_confirm_ultra.py    # 自动确认发货模块（多层加密保护）
-│   └── secure_freeshipping_ultra.py # 自动免拼发货模块（多层加密保护）
-├── 🛠️ 工具模块
-│   └── utils/
-│       ├── xianyu_utils.py        # 闲鱼API工具函数（加密、签名、解析）
-│       ├── message_utils.py       # 消息格式化和处理工具
-│       ├── ws_utils.py            # WebSocket客户端封装
-│       ├── qr_login.py            # 二维码登录功能
-│       ├── item_search.py         # 商品搜索功能（基于Playwright，无头模式）
-│       ├── order_detail_fetcher.py # 订单详情获取工具
-│       ├── image_utils.py         # 图片处理工具（压缩、格式转换）
-│       └── image_uploader.py      # 图片上传到CDN工具
-├── 🌐 前端界面
-│   └── static/
-│       ├── index.html             # 主管理界面（集成所有功能模块）
-│       ├── login.html             # 用户登录页面
-│       ├── register.html          # 用户注册页面（邮箱验证）
-│       ├── js/
-│       │   └── app.js             # 主要JavaScript逻辑和所有功能模块
-│       ├── css/
-│       │   ├── variables.css      # CSS变量定义
-│       │   ├── layout.css         # 布局样式
-│       │   ├── components.css     # 组件样式
-│       │   ├── accounts.css       # 账号管理样式
-│       │   ├── keywords.css       # 关键词管理样式
-│       │   ├── items.css          # 商品管理样式
-│       │   ├── logs.css           # 日志管理样式
-│       │   ├── notifications.css  # 通知样式
-│       │   ├── dashboard.css      # 仪表板样式
-│       │   ├── admin.css          # 管理员样式
-│       │   └── app.css            # 主应用样式
-│       ├── lib/
-│       │   ├── bootstrap/         # Bootstrap框架
-│       │   └── bootstrap-icons/   # Bootstrap图标
-│       ├── uploads/
-│       │   └── images/            # 上传的图片文件
-│       ├── xianyu_js_version_2.js # 闲鱼JavaScript工具库
-│       ├── wechat-group.png       # 微信群二维码
-│       └── qq-group.png           # QQ群二维码
-├── 🐳 Docker部署
-│   ├── Dockerfile                 # Docker镜像构建文件（优化版）
-│   ├── Dockerfile-cn             # 国内优化版Docker镜像构建文件
-│   ├── docker-compose.yml        # Docker Compose一键部署配置
-│   ├── docker-compose-cn.yml     # 国内优化版Docker Compose配置
-│   ├── docker-deploy.sh          # Docker部署管理脚本（Linux/macOS）
-│   ├── docker-deploy.bat         # Docker部署管理脚本（Windows）
-│   ├── entrypoint.sh              # Docker容器启动脚本
-│   └── .dockerignore             # Docker构建忽略文件
-├── 🌐 Nginx配置
-│   └── nginx/
-│       ├── nginx.conf            # Nginx反向代理配置
-│       └── ssl/                  # SSL证书目录
-├── 📋 配置文件
-│   ├── global_config.yml         # 全局配置文件（WebSocket、API等）
-│   ├── requirements.txt          # Python依赖包列表（精简版，无内置模块）
-│   ├── .gitignore                # Git忽略文件配置（完整版）
-│   └── README.md                 # 项目说明文档（本文件）
-└── 📊 数据目录（运行时创建）
-    ├── data/                     # 数据目录（Docker挂载）
-    │   └── xianyu_data.db        # SQLite数据库文件
-    ├── logs/                     # 按日期分割的日志文件
-    └── backups/                  # 数据备份文件
+├── backend-web/          # 主 Web API 服务（端口 8089）
+├── websocket/            # 闲鱼连接与消息处理服务（端口 8090）
+├── scheduler/            # 定时任务服务（端口 8091）
+├── common/               # 主系统与返佣系统共享模块
+├── frontend/             # 主系统前端（端口 9000）
+├── launcher/             # Windows 桌面启动器（Nuitka 打包为 EXE）
+├── promotion/
+│   ├── backend/          # 返佣后端（端口 8092）
+│   └── frontend/         # 返佣前端（端口 9001）
+├── scripts/              # CI/CD 与工具脚本
+├── docker/frontend/      # 前端 Dockerfile 与 Nginx 配置
+├── docker-compose.yml    # 本地源码构建编排
+├── deploy.sh             # 一键部署脚本（自动生成远程镜像版 compose）
+├── deploy_remote.sh      # 远程 MySQL/Redis 一键部署脚本（自动生成 docker-compose.remote.yml）
+├── update.sh             # 一键更新脚本（拉取最新远程镜像）
+├── build.sh              # 本地源码全量构建脚本
+├── build_frontend.sh     # 单独构建并重启 Frontend
+├── build_backend_web.sh  # 单独构建并重启 Backend-Web
+├── build_websocket.sh    # 单独构建并重启 WebSocket
+├── build_scheduler.sh    # 单独构建并重启 Scheduler
+├── EXE打包构建.bat       # Windows 桌面启动器打包脚本
+├── 离线依赖打包.bat      # Windows 离线依赖打包脚本
+└── README.md
 ```
 
-</details>
+### 服务职责
 
-## 🚀 快速开始
+| 服务 | 默认端口 | 说明 |
+|------|----------|------|
+| `frontend` | 9000 | 主系统前端 |
+| `backend-web` | 8089 | 主系统 API 网关、业务接口 |
+| `websocket` | 8090 | 闲鱼 WebSocket、消息收发、登录与订单联动 |
+| `scheduler` | 8091 | 定时任务执行器 |
+| `promotion/backend` | 8092 | 返佣后端 API |
+| `promotion/frontend` | 9001 | 返佣前端 |
 
-**⚡ 最快部署方式（推荐）**：使用预构建镜像，无需下载源码，一条命令即可启动！
+### 架构说明
 
-### 方式一：Docker 一键部署（最简单）
+- 主系统采用多服务拆分：
+  - `frontend` 负责界面与交互
+  - `backend-web` 负责大部分业务 API
+  - `websocket` 负责闲鱼实时连接、扫码登录、消息处理
+  - `scheduler` 负责自动发货、评价、订单拉取、Cookie 刷新等定时任务
+  - `common` 提供模型、数据库、自检、公共服务与工具
+- 返佣子系统位于 `promotion/` 目录，前后端独立，当前不在根目录 Docker Compose 编排内
+- 主系统三个后端服务都提供 `/health` 健康检查接口
+- WebSocket 在数据库、Redis 和服务配置检查完成后即可提供 HTTP 服务，账号配置加载与连接任务调度在后台错峰执行，不再因账号数量增加而推迟 HTTP 就绪。系统设置通过 `/health/ping` 检测消息服务存活，并显示账号启动进度或失败原因；调度完成不代表所有账号已连接，实际连接状态以账号管理为准。关闭服务时会先取消未完成的账号调度，再清理账号任务。
+- Docker 依赖链：mysql/redis → backend-web → websocket → scheduler；frontend → backend-web
+
+## 快速开始
+
+### 方式一：服务器一键部署（推荐）
+
+服务器已安装 Docker 与 Docker Compose 后，直接执行一键部署脚本即可：
 
 ```bash
-# 1. 创建数据目录
-mkdir -p xianyu-auto-reply
-
-# 2. 一键启动容器
-docker run -d \
-  -p 8080:8080 \
-  -v $PWD/xianyu-auto-reply/:/app/data/ \
-  --name xianyu-auto-reply \
-  registry.cn-shanghai.aliyuncs.com/zhinian-software/xianyu-auto-reply:1.0
-
-# 3. 访问系统
-# http://localhost:8080
+curl -fsSL https://xy-update.zhinianboke.com/deploy.sh | sed 's/\r$//' | bash
 ```
 
-**Windows用户**：
-```cmd
-# 创建数据目录
-mkdir xianyu-auto-reply
+该脚本会自动完成部署所需的配置生成、镜像拉取、旧容器清理与服务启动。
 
-# 启动容器
-docker run -d -p 8080:8080 -v %cd%/xianyu-auto-reply/:/app/data/ --name xianyu-auto-reply registry.cn-shanghai.aliyuncs.com/zhinian-software/xianyu-auto-reply:1.0
-```
-
-### 方式二：从源码构建部署
+更新版本，直接执行一键更新脚本即可：
 
 ```bash
-# 1. 克隆项目
+curl -fsSL https://xy-update.zhinianboke.com/update.sh | sed 's/\r$//' | bash
+```
+
+### 方式二：克隆仓库部署
+
+```bash
 git clone https://github.com/zhinianboke/xianyu-auto-reply.git
 cd xianyu-auto-reply
-
-# 2. 设置脚本执行权限（Linux/macOS）
-chmod +x docker-deploy.sh
-
-# 3. 一键部署（自动构建镜像）
-./docker-deploy.sh
-
-# 4. 访问系统
-# http://localhost:8080
+bash deploy.sh
 ```
 
-**Windows用户**：
-```cmd
-# 使用Windows批处理脚本（推荐）
-docker-deploy.bat
+- 首次运行会自动生成 `.env` 配置文件和 `docker-compose.deploy.yml`
+- 从阿里云镜像仓库拉取预构建镜像并启动
+- 如果检测到加密版容器会自动清理（保留数据卷）
+- 部署完成后默认访问地址：
+  - 前端：`http://服务器IP:9000`
+  - API 文档：`http://服务器IP:8089/docs`
+  - 默认账号：`admin` / `admin123`
 
-# 或者使用Git Bash/WSL
-bash docker-deploy.sh
-
-# 或者直接使用Docker Compose
-docker-compose up -d --build
-```
-
-### 方式三：本地开发部署
+后续更新：
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/zhinianboke/xianyu-auto-reply.git
-cd xianyu-auto-reply
-
-# 2. 创建虚拟环境（推荐）
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-# 或 venv\Scripts\activate  # Windows
-
-# 3. 安装Python依赖
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# 4. 安装Playwright浏览器
-playwright install chromium
-playwright install-deps chromium  # Linux需要
-
-# 5. 启动系统
-python Start.py
-
-# 6. 访问系统
-# http://localhost:8080
+bash update.sh
 ```
 
-### 📋 环境要求
-
-- **Python**: 3.11+
-- **Node.js**: 16+ (用于JavaScript执行)
-- **系统**: Windows/Linux/macOS
-- **内存**: 建议2GB+
-- **存储**: 建议10GB+
-- **Docker**: 20.10+ (Docker部署)
-- **Docker Compose**: 2.0+ (Docker部署)
-
-
-
-### 🌐 访问系统
-
-部署完成后，您可以通过以下方式访问系统：
-
-- **Web管理界面**：http://localhost:8080
-- **默认管理员账号**：
-  - 用户名：`admin`
-  - 密码：`admin123`
-- **API文档**：http://localhost:8080/docs
-- **健康检查**：http://localhost:8080/health
-
-> ⚠️ **安全提示**：首次登录后请立即修改默认密码！
-
-
-## 📋 系统使用
-
-### 1. 用户注册
-- 访问 `http://localhost:8080/register.html`
-- 填写用户信息，完成邮箱验证
-- 输入图形验证码完成注册
-
-### 2. 添加闲鱼账号
-- 登录系统后进入主界面
-- 点击"添加新账号"
-- 输入账号ID和完整的Cookie值
-- 系统自动启动账号监控任务
-
-### 3. 配置自动回复
-- **关键词回复**：设置关键词和对应回复内容
-- **AI回复**：配置OpenAI API密钥启用智能回复
-- **默认回复**：设置未匹配时的默认回复
-
-### 4. 设置自动发货
-- 添加发货规则，设置商品关键词和发货内容
-- 支持文本内容和卡密文件两种发货方式
-- 系统检测到付款消息时自动确认发货并自动发货
-
-### 5. 使用商品搜索功能
-- 访问商品搜索页面（需要登录）
-- 输入搜索关键词和查询页数
-- 系统自动获取真实闲鱼商品数据
-- 商品按"人想要"数量自动排序
-- 支持查看商品详情和跳转到闲鱼页面
-
-## 🏗️ 系统架构
-
-```
-┌─────────────────────────────────────┐
-│           Web界面 (FastAPI)         │
-│         用户管理 + 功能界面          │
-└─────────────┬───────────────────────┘
-              │
-┌─────────────▼───────────────────────┐
-│        CookieManager               │
-│         多账号任务管理              │
-└─────────────┬───────────────────────┘
-              │
-┌─────────────▼───────────────────────┐
-│      XianyuLive (多实例)           │
-│     WebSocket连接 + 消息处理        │
-└─────────────┬───────────────────────┘
-              │
-┌─────────────▼───────────────────────┐
-│        SQLite数据库                │
-│   用户数据 + 商品信息 + 配置数据     │
-└─────────────────────────────────────┘
-```
-
-## ✨ 核心功能特性
-
-### 🚀 自动回复系统
-- **智能关键词匹配** - 支持精确匹配和模糊匹配，灵活配置回复规则
-- **AI智能回复** - 集成多种AI模型（通义千问、GPT等），智能理解用户意图
-- **多账号管理** - 支持同时管理多个闲鱼账号，独立配置和运行
-- **实时消息处理** - WebSocket长连接，毫秒级响应用户消息
-- **自定义回复模板** - 支持占位符和动态内容，个性化回复体验
-
-### 🛒 自动发货系统
-- **智能订单识别** - 自动识别虚拟商品订单，精准匹配发货规则
-- **多重安全验证** - 超级加密保护，防止误操作和数据泄露
-- **批量处理能力** - 支持批量确认发货，提高处理效率
-- **异常处理机制** - 完善的错误处理和重试机制，确保发货成功
-- **多渠道通知** - 支持QQ、钉钉、飞书、Bark、邮件等多种发货通知方式
-
-### 👥 多用户系统
-- **用户注册登录** - 支持邮箱验证和图形验证码，安全可靠
-- **权限管理** - 管理员和普通用户权限分离，精细化权限控制
-- **数据隔离** - 每个用户的数据完全隔离，保护隐私安全
-- **会话管理** - JWT Token认证，支持自动续期和安全登出
-
-### 📊 数据管理
-- **商品信息管理** - 自动获取和同步商品信息，实时更新状态
-- **订单数据统计** - 详细的订单数据分析和可视化图表
-- **关键词管理** - 灵活的关键词配置，支持正则表达式
-- **数据导入导出** - 支持Excel格式的批量数据操作
-- **自动备份** - 定期自动备份重要数据，防止数据丢失
-
-### 🔍 商品搜索
-- **真实数据获取** - 基于Playwright技术，无头模式获取真实闲鱼商品数据
-- **多页搜索** - 支持分页搜索和批量获取，无限制数据采集
-- **智能排序** - 按"人想要"数量自动倒序排列，优先显示热门商品
-- **数据可视化** - 美观的商品展示界面，支持排序和筛选
-- **前端分页** - 灵活的前端分页显示，提升用户体验
-- **账号状态验证** - 自动检查cookies启用状态，确保搜索功能正常
-
-### 📱 通知系统
-- **多渠道支持** - QQ、钉钉、飞书、Bark、邮件、微信、Telegram等8种通知方式
-- **智能配置** - 可视化配置界面，支持复杂参数和加密设置
-- **实时推送** - 重要事件实时通知，及时了解系统状态
-- **通知模板** - 自定义通知内容和格式，个性化消息推送
-- **移动端支持** - Bark iOS推送，随时随地接收通知
-
-### 🔐 安全特性
-- **Cookie安全管理** - 加密存储用户凭证，定期自动刷新
-- **Token自动刷新** - 智能检测和刷新过期Token，保持连接稳定
-- **操作日志** - 详细记录所有操作日志，支持审计和追踪
-- **异常监控** - 实时监控系统异常和错误，主动预警
-
-### 🎨 用户界面
-- **现代化设计** - 基于Bootstrap 5的响应式界面，美观易用
-- **多主题支持** - 支持明暗主题切换，个性化界面体验
-- **移动端适配** - 完美适配手机和平板设备，随时随地管理
-- **实时更新** - 界面数据实时更新，无需手动刷新
-
-## 📁 核心文件功能说明
-
-### 🚀 核心启动模块
-- **`Start.py`** - 项目启动入口，初始化CookieManager和FastAPI服务，从数据库加载账号任务并启动后台API服务，支持环境变量配置
-- **`XianyuAutoAsync.py`** - 闲鱼WebSocket连接核心，处理消息收发、自动回复、指定商品回复、自动发货、商品信息收集、AI回复
-- **`reply_server.py`** - FastAPI Web服务器，提供完整的管理界面和RESTful API接口，支持多用户系统、JWT认证、权限管理
-- **`cookie_manager.py`** - 多账号Cookie管理器，负责账号任务的启动、停止、状态管理和线程安全操作，支持数据库持久化
-
-### 🗄️ 数据和配置管理
-- **`db_manager.py`** - SQLite数据库管理器，支持多用户数据隔离、自动迁移、版本管理、完整的CRUD操作、邮箱验证、系统设置
-- **`config.py`** - 全局配置文件管理器，加载YAML配置和环境变量，提供配置项访问接口，支持动态配置更新
-- **`global_config.yml`** - 全局配置文件，包含WebSocket、API、自动回复、AI、通知等所有系统配置项
-
-### 🤖 智能功能模块
-- **`ai_reply_engine.py`** - AI智能回复引擎，支持OpenAI、通义千问等多种AI模型，意图识别、上下文管理、个性化回复
-- **`secure_confirm_ultra.py`** - 自动确认发货模块，采用多层加密保护，调用闲鱼API确认发货状态，支持锁机制防并发
-- **`secure_freeshipping_ultra.py`** - 自动免拼发货模块，支持批量处理、异常恢复、智能匹配、规格识别
-- **`file_log_collector.py`** - 实时日志收集器，提供Web界面日志查看、搜索、过滤、下载和管理功能
-
-### 🛠️ 工具模块 (`utils/`)
-- **`xianyu_utils.py`** - 闲鱼API核心工具，包含加密算法、签名生成、数据解析、Cookie处理、请求封装
-- **`message_utils.py`** - 消息处理工具，格式化消息内容、变量替换、内容过滤、模板渲染、表情处理
-- **`ws_utils.py`** - WebSocket客户端封装，处理连接管理、心跳检测、重连机制、消息队列、异常恢复
-- **`qr_login.py`** - 二维码登录功能，生成登录二维码、状态检测、Cookie获取、验证、自动刷新
-- **`item_search.py`** - 商品搜索功能，基于Playwright获取真实闲鱼商品数据，支持分页、过滤、排序
-- **`order_detail_fetcher.py`** - 订单详情获取工具，解析订单信息、买家信息、SKU详情，支持缓存优化、锁机制
-- **`image_utils.py`** - 图片处理工具，支持压缩、格式转换、尺寸调整、水印添加、质量优化
-- **`image_uploader.py`** - 图片上传工具，支持多种CDN服务商、自动压缩、格式优化、批量上传
-
-### 🌐 前端界面 (`static/`)
-- **`index.html`** - 主管理界面，集成所有功能模块：账号管理、关键词管理、商品管理、发货管理、系统监控、用户管理等
-- **`login.html`** - 用户登录页面，支持图形验证码、记住登录状态、多重安全验证
-- **`register.html`** - 用户注册页面，支持邮箱验证码、实时验证、密码强度检测
-- **`js/app.js`** - 主要JavaScript逻辑，包含所有功能模块：前端交互、API调用、实时更新、数据管理、用户界面控制
-- **`css/`** - 模块化样式文件，包含布局、组件、主题等分类样式，响应式设计，支持明暗主题切换
-- **`xianyu_js_version_2.js`** - 闲鱼JavaScript工具库，加密解密、数据处理、API封装
-- **`lib/`** - 前端依赖库，包含Bootstrap 5、Bootstrap Icons等第三方库
-- **`uploads/images/`** - 图片上传目录，支持发货图片和其他媒体文件存储
-
-### 🐳 部署配置
-- **`Dockerfile`** - Docker镜像构建文件，基于Python 3.11-slim，包含Playwright浏览器、系统依赖，支持无头模式运行，优化构建层级
-- **`Dockerfile-cn`** - 国内优化版Docker镜像构建文件，使用国内镜像源加速构建，适合国内网络环境
-- **`docker-compose.yml`** - Docker Compose配置，支持一键部署、完整环境变量配置、资源限制、健康检查、可选Nginx代理
-- **`docker-compose-cn.yml`** - 国内优化版Docker Compose配置文件，使用国内镜像源
-- **`docker-deploy.sh`** - Docker部署管理脚本，提供构建、启动、停止、重启、监控、日志查看等功能（Linux/macOS）
-- **`docker-deploy.bat`** - Windows版本部署脚本，支持Windows环境一键部署和管理
-- **`entrypoint.sh`** - Docker容器启动脚本，处理环境初始化、目录创建、权限设置和服务启动
-- **`nginx/nginx.conf`** - Nginx反向代理配置，支持负载均衡、SSL终端、WebSocket代理、静态文件服务
-- **`requirements.txt`** - Python依赖包列表，精简版本无内置模块，按功能分类组织，包含详细版本说明和安装指南
-- **`.gitignore`** - Git忽略文件配置，完整覆盖Python、Docker、前端、测试、临时文件等，支持项目特定文件类型
-- **`.dockerignore`** - Docker构建忽略文件，优化构建上下文大小和构建速度，排除不必要的文件和目录
-
-## 🏗️ 详细技术架构
-
-### 📊 系统架构图
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Web前端界面                              │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  用户管理   │ │  账号管理   │ │  关键词管理 │ │  商品管理   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  日志管理   │ │  数据管理   │ │  商品搜索   │ │  系统监控   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     FastAPI Web服务器                          │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  用户认证   │ │  权限管理   │ │  API接口    │ │  文件上传   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  邮箱验证   │ │  图形验证码 │ │  实时日志   │ │  健康检查   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    CookieManager 多账号管理器                   │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  任务调度   │ │  状态监控   │ │  线程管理   │ │  异常处理   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                XianyuLive 实例集群 (多实例并行)                  │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  账号A实例  │ │  账号B实例  │ │  账号C实例  │ │    ...      │ │
-│  │ WebSocket   │ │ WebSocket   │ │ WebSocket   │ │             │ │
-│  │ 消息处理    │ │ 消息处理    │ │ 消息处理    │ │             │ │
-│  │ 自动回复    │ │ 自动回复    │ │ 自动回复    │ │             │ │
-│  │ 自动发货    │ │ 自动发货    │ │ 自动发货    │ │             │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      辅助服务模块                               │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │ AI回复引擎  │ │ 图片处理    │ │ 商品搜索    │ │ 订单处理    │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │ 日志收集    │ │ 文件管理    │ │ 通知推送    │ │ 数据备份    │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      SQLite数据库                               │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  用户数据   │ │  账号数据   │ │  关键词数据 │ │  商品数据   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  发货数据   │ │  系统设置   │ │  日志数据   │ │  统计数据   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 🔄 数据流程图
-
-```
-用户消息 → WebSocket接收 → 消息解析 → 关键词匹配 → 回复生成 → 消息发送
-    │           │            │          │          │          │
-    ▼           ▼            ▼          ▼          ▼          ▼
- 商品识别   连接管理      内容过滤   AI处理    模板渲染   发送确认
-    │           │            │          │          │          │
-    ▼           ▼            ▼          ▼          ▼          ▼
- 数据存储   状态监控      安全检查   上下文    变量替换   日志记录
-```
-
-### 🔐 安全架构
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        安全防护层                               │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  JWT认证    │ │  权限控制   │ │  数据加密   │ │  访问控制   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
-│  │  图形验证码 │ │  邮箱验证   │ │  会话管理   │ │  操作日志   │ │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## ⚙️ 配置说明
-
-### 管理员密码配置
-
-**重要**：为了系统安全，强烈建议修改默认管理员密码！
-
-#### 默认密码
-- **用户名**：`admin`
-- **默认密码**：`admin123`
-- **初始化机制**：首次创建数据库时自动创建admin用户
-
-
-### 全局配置文件
-`global_config.yml` 包含详细的系统配置，支持：
-- WebSocket连接参数
-- API接口配置
-- 自动回复设置
-- 商品管理配置
-- 日志配置等
-
-## 🔧 高级功能
-
-### AI回复配置
-1. 在用户设置中配置OpenAI API密钥
-2. 选择AI模型（支持GPT-3.5、GPT-4、通义千问等）
-3. 设置回复策略和提示词
-4. 启用AI回复功能
-
-### 自动发货规则
-1. 进入发货管理页面
-2. 添加发货规则，设置商品关键词
-3. 上传卡密文件或输入发货内容
-4. 系统自动匹配商品并发货
-
-### 商品信息管理
-1. 系统自动收集消息中的商品信息
-2. 通过API获取完整商品详情
-3. 支持手动编辑商品信息
-4. 为自动发货提供准确的商品数据
-
-## 📊 监控和维护
-
-### 日志管理
-- **实时日志**：Web界面查看实时系统日志
-- **日志文件**：`logs/` 目录下的按日期分割的日志文件
-- **日志级别**：支持DEBUG、INFO、WARNING、ERROR级别
-
-
-## 🔒 安全特性
-
-- **JWT认证**：安全的用户认证机制
-- **图形验证码**：防止自动化攻击
-- **邮箱验证**：确保用户邮箱真实性
-- **数据隔离**：用户数据完全隔离
-- **会话管理**：安全的会话超时机制
-- **操作日志**：完整的用户操作记录
-- **代码加密**：核心业务逻辑采用多层加密保护
-
-## 🛡️ 技术特性
-
-### 🏗️ 架构设计
-- **微服务架构**：模块化设计，易于维护和扩展
-- **异步编程**：基于asyncio的高性能异步处理
-- **WebSocket长连接**：实时消息处理，低延迟响应
-- **RESTful API**：标准化的API接口设计
-
-### 🔧 技术栈
-- **后端框架**：FastAPI + Uvicorn
-- **数据库**：SQLite（轻量级，无需额外配置）
-- **前端技术**：原生HTML/CSS/JavaScript + Bootstrap
-- **WebSocket**：实时双向通信
-- **容器化**：Docker + Docker Compose
-
-### 🚀 性能优化
-- **连接池管理**：高效的数据库连接管理
-- **异步处理**：非阻塞I/O操作
-- **内存优化**：智能缓存和垃圾回收
-- **资源限制**：Docker容器资源限制和监控
-
-### 🔐 安全机制
-- **多层加密**：敏感代码采用5层编码混淆
-- **变量名随机化**：防止静态分析
-- **运行时解密**：代码在内存中动态解密执行
-- **防重复机制**：智能防重复确认和发货
-
-## 🤝 贡献指南
-
-欢迎为项目做出贡献！您可以通过以下方式参与：
-
-### 📝 提交问题
-- 在 [GitHub Issues](https://github.com/zhinianboke/xianyu-auto-reply/issues) 中报告Bug
-- 提出新功能建议和改进意见
-- 分享使用经验和最佳实践
-
-### 🔧 代码贡献
-- Fork 项目到您的GitHub账号
-- 创建功能分支：`git checkout -b feature/your-feature`
-- 提交更改：`git commit -am 'Add some feature'`
-- 推送分支：`git push origin feature/your-feature`
-- 提交 Pull Request
-
-
-## ❓ 常见问题
-
-### 1. 端口被占用
-如果8080端口被占用，可以修改 `global_config.yml` 文件中的 `AUTO_REPLY.api.port` 配置，或者在 Docker 启动时通过环境变量 `WEB_PORT` 指定端口。
-
-### 2. 数据库连接失败
-检查数据库文件权限，确保应用有读写权限。
-
-### 3. WebSocket连接失败
-检查防火墙设置，确保WebSocket端口可以访问。
-
-### 4. Shell脚本执行错误（Linux/macOS）
-如果遇到 `bad interpreter` 错误，说明脚本的行结束符格式不正确：
+### 方式三：使用远程 MySQL / Redis 部署
+
+当 MySQL 和 Redis 由外部（如云数据库 RDS、独立服务器或已有实例）提供时，可使用 `deploy_remote.sh`。
+该脚本**不内置 mysql/redis 容器**，仅拉取并启动 4 个应用服务（frontend / backend-web / websocket / scheduler），
+数据库连接信息通过 `.env.remote` 配置。与方式一相同，直接远程拉取脚本执行即可：
 
 ```bash
-# 方法1：手动修复行结束符
-sed -i 's/\r$//' docker-deploy.sh
-chmod +x docker-deploy.sh
-./docker-deploy.sh
+# 1) 首次运行：自动生成 .env.remote 后退出，提示填写远程连接信息
+curl -fsSL https://xy-update.zhinianboke.com/deploy_remote.sh | sed 's/\r$//' | bash
 
-# 方法2：直接使用bash运行
-bash docker-deploy.sh
+# 2) 编辑 .env.remote，填写真实的远程地址（勿填 localhost）
+#    MYSQL_HOST / REDIS_HOST 等
+vim .env.remote
+
+# 3) 再次运行：校验配置 → 自动生成 docker-compose.remote.yml → 拉取镜像 → 启动
+curl -fsSL https://xy-update.zhinianboke.com/deploy_remote.sh | sed 's/\r$//' | bash
 ```
 
-### 5. Docker容器启动失败
-如果遇到 `exec /app/entrypoint.sh: no such file or directory` 错误：
+> 已克隆仓库的也可改用本地脚本：`bash deploy_remote.sh`（首次生成配置后退出，填好 `.env.remote` 再次执行）。
+
+- 首次运行自动生成 `.env.remote`，每次运行自动生成 `docker-compose.remote.yml`，均不影响根目录原有的 `.env` / `docker-compose.yml` / `docker-compose.deploy.yml`
+- 容器名与主套保持一致（`xianyu-backend-web` / `xianyu-websocket` / `xianyu-scheduler` / `xianyu-frontend`），与方式二/方式四属于同一套部署，二者只需选其一，不要同时启动
+- 远程 MySQL 需提前创建好数据库（默认 `xianyu_data`）并授权部署机 IP 远程访问，应用启动时会自动建表与补齐字段
+- 远程 Redis 密码可以为空：在 `.env.remote` 中填写 `REDIS_PASSWORD=` 即按无密码连接；有密码时填写实际密码。未定义 `REDIS_PASSWORD` 时使用默认密码 `xianyu@2026`，显式空值不会回退到默认密码
+- 建议远程 MySQL 持久设置 `max_connect_errors=100000`；若出现错误码 1129，需在数据库服务器执行 `FLUSH HOSTS` 解除主机封锁
+- 若远程库/缓存就在宿主机上，请使用 `host.docker.internal` 或宿主机内网 IP，**不要填 `localhost` / `127.0.0.1`**
+
+### 方式四：本地源码 Docker 构建
 
 ```bash
-# 确保entrypoint.sh文件存在并重新构建
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+bash build.sh rebuild
 ```
 
-### 6. 预构建镜像拉取失败
-如果无法拉取预构建镜像，可以使用源码构建：
+常用命令：
+
+| 命令 | 说明 |
+|------|------|
+| `bash build.sh rebuild` | 删除旧容器与镜像，重新构建并启动 |
+| `bash build.sh start` | 启动服务 |
+| `bash build.sh stop` | 停止服务 |
+| `bash build.sh restart` | 重启服务 |
+| `bash build.sh logs` | 查看实时日志 |
+| `bash build.sh status` | 查看服务状态 |
+
+单独重建某个服务（不影响其他服务）：
 
 ```bash
-# 克隆项目并从源码构建
-git clone https://github.com/zhinianboke/xianyu-auto-reply.git
-cd xianyu-auto-reply
-./docker-deploy.sh
+bash build_frontend.sh      # 重建前端
+bash build_backend_web.sh   # 重建 Backend-Web
+bash build_websocket.sh     # 重建 WebSocket
+bash build_scheduler.sh     # 重建 Scheduler
 ```
 
-### 7. Windows系统部署
-Windows用户推荐使用批处理脚本：
+### 方式五：源码本地开发
 
-```cmd
-# 使用Windows批处理脚本
-docker-deploy.bat
+#### 1. 准备基础服务
 
-# 或者使用PowerShell
-powershell -ExecutionPolicy Bypass -File docker-deploy.bat
+可以使用本机 MySQL / Redis，也可以仅用 Docker 启动基础设施：
+
+```bash
+docker compose up -d mysql redis
 ```
 
-## 📞 技术支持
+#### 2. 创建服务配置
 
+主系统常用 `.env` 配置示例：
 
-### 💬 交流群组
+```env
+ENVIRONMENT=development
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=root
+MYSQL_DATABASE=xianyu_data
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_POOL_SIZE=800
+REDIS_SOCKET_TIMEOUT=5
+REDIS_SOCKET_CONNECT_TIMEOUT=3
+REDIS_SOCKET_KEEPALIVE=true
+REDIS_SOCKET_KEEPALIVE_IDLE=60
+REDIS_SOCKET_KEEPALIVE_INTERVAL=10
+REDIS_SOCKET_KEEPALIVE_COUNT=3
+REDIS_HEALTH_CHECK_INTERVAL=30
+REDIS_PROTOCOL=2
+REDIS_STARTUP_MAX_RETRIES=5
+REDIS_STARTUP_RETRY_BASE_DELAY=1
+REDIS_STARTUP_RETRY_CAP_DELAY=10
+CORS_ORIGINS=*
+BACKEND_WEB_PORT=8089
+WEBSOCKET_PORT=8090
+SCHEDULER_PORT=8091
+WEBSOCKET_SERVICE_URL=http://127.0.0.1:8090
+SCHEDULER_SERVICE_URL=http://127.0.0.1:8091
+BACKEND_WEB_SERVICE_URL=http://127.0.0.1:8089
+DB_POOL_SIZE=800
+DB_MAX_OVERFLOW=60
+DB_POOL_TIMEOUT=30
+DB_POOL_RECYCLE=1800
+DB_POOL_PRE_PING=true
+DB_POOL_USE_LIFO=true
+DB_CONNECT_TIMEOUT=10
+STATIC_DIR=static
+TZ=Asia/Shanghai
+```
 
-欢迎加入我们的技术交流群，获取实时帮助和最新更新：
+各服务的数据库连接池容量统一为 **800**，连接按需建立。各服务 `.env.example`、Docker 和本地启动器保留不同的溢出额度：
 
-#### 闲鱼官方闲置群
-<img src="static/xianyu-group.png" alt="闲鱼官方闲置群二维码" width="200">
+| 服务 | DB_POOL_SIZE | DB_MAX_OVERFLOW | 单进程峰值 |
+| --- | ---: | ---: | ---: |
+| Backend-Web | 800 | 60 | 860 |
+| WebSocket | 800 | 150 | 950 |
+| Scheduler | 800 | 30 | 830 |
+| 推广后端（可选） | 800 | 20 | 820 |
 
-#### 微信交流群
-<img src="static/wechat-group.png" alt="微信群二维码" width="200">
+三个主服务峰值合计为 **2640**，启用推广后端后为 **3460**。Docker 的 `MYSQL_MAX_CONNECTIONS` 默认设为 **4000**；远程或本机 MySQL 需自行将 `max_connections` 配置到足够容量。多进程、多副本部署时，应按全部进程的峰值总和额外预留管理连接。
 
-#### QQ交流群
-<img src="static/qq-group.png" alt="QQ群二维码" width="200">
+已有部署的 `.env` 不会被脚本覆盖，请同步检查服务目录中的 `DB_POOL_SIZE`，以及 Docker 部署目录中的 `BACKEND_DB_POOL_SIZE`、`WEBSOCKET_DB_POOL_SIZE`、`SCHEDULER_DB_POOL_SIZE` 和 `MYSQL_MAX_CONNECTIONS`。配置更新后需重启对应服务才能生效。
 
-### 📧 联系方式
-- **技术支持**：遇到问题可在群内咨询
-- **功能建议**：欢迎提出改进建议
-- **Bug反馈**：发现问题请及时反馈
+#### 3. 启动主系统后端
+
+```bash
+# Backend-Web 服务
+cd backend-web
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux/macOS: source .venv/bin/activate
+pip install -e .
+python -m playwright install chromium
+python -m patchright install chromium
+python main.py
+```
+
+```bash
+# WebSocket 服务
+cd websocket
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux/macOS: source .venv/bin/activate
+pip install -e .
+python -m playwright install chromium
+python -m patchright install chromium
+python main.py
+```
+
+```bash
+# Scheduler 服务
+cd scheduler
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# Linux/macOS: source .venv/bin/activate
+pip install -e .
+python -m playwright install chromium
+python main.py
+```
+
+#### 4. 启动前端
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+#### 5. 启动返佣子系统
+
+```bash
+# 返佣后端
+cd promotion/backend
+pip install -e .
+python main.py
+
+# 返佣前端
+cd promotion/frontend
+npm install
+npm run dev
+```
+
+## 配置说明
+
+### 关键环境变量
+
+| 变量 | 说明 |
+|------|------|
+| `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_USER` / `MYSQL_PASSWORD` / `MYSQL_DATABASE` | MySQL 连接 |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DB` | Redis 连接 |
+| `REDIS_POOL_SIZE` / `REDIS_SOCKET_TIMEOUT` / `REDIS_SOCKET_CONNECT_TIMEOUT` / `REDIS_SOCKET_KEEPALIVE` / `REDIS_SOCKET_KEEPALIVE_IDLE` / `REDIS_SOCKET_KEEPALIVE_INTERVAL` / `REDIS_SOCKET_KEEPALIVE_COUNT` / `REDIS_HEALTH_CHECK_INTERVAL` / `REDIS_PROTOCOL` / `REDIS_STARTUP_MAX_RETRIES` / `REDIS_STARTUP_RETRY_BASE_DELAY` / `REDIS_STARTUP_RETRY_CAP_DELAY` | Redis 连接池、超时、Keepalive、健康检查和启动重试配置 |
+| `JWT_SECRET_KEY` | JWT 密钥，由数据库统一托管（首次启动自动生成并持久化），无需手动配置 |
+| `INTERNAL_API_TOKEN` | 服务间 `/internal` API 共享令牌，可留空；首次启动自动生成并持久化到数据库 |
+| `BACKEND_WEB_PORT` / `WEBSOCKET_PORT` / `SCHEDULER_PORT` | 各服务端口 |
+| `WEBSOCKET_SERVICE_URL` / `SCHEDULER_SERVICE_URL` / `BACKEND_WEB_SERVICE_URL` | 服务间调用地址 |
+| `FRONTEND_SERVICE_URL` | 公开状态接口探测前端的内部地址；Docker 默认 `http://frontend:80`，本机默认 `http://127.0.0.1:9000`；自定义端口或跨主机部署时覆盖 |
+| `VITE_BACKEND_SERVICE_URL` | Vite 开发/预览环境的后端代理目标，可回退到 `BACKEND_WEB_SERVICE_URL`；默认 `http://127.0.0.1:8089` |
+| `BACKEND_WEB_PUBLIC_URL` | 对外访问地址，用于生成文件 URL |
+| `CORS_ORIGINS` | CORS 白名单 |
+| `BROWSER_HEADLESS` | Playwright 是否无头运行 |
+
+### 公开服务状态接口
+
+使用前端访问地址请求 `GET /api/v1/public/status`，无需登录或携带用户令牌。例如前端地址为 `https://你的域名` 时，请求 `https://你的域名/api/v1/public/status`；本机默认请求 `http://127.0.0.1:9000/api/v1/public/status`。Docker Nginx、Vite 开发/预览环境和桌面启动器均提供该入口。
+
+尾部带斜杠的 `GET /api/v1/public/status/` 也直接返回相同 JSON 并共享限流额度，不跳转到后端地址。Docker Compose 及部署、更新脚本均透传 `FRONTEND_SERVICE_URL`；需要自定义时在部署 `.env` 中填写后端能够访问的前端内部地址。
+
+误用 POST、PUT、PATCH、DELETE 等方法时仍返回 HTTP 200，业务响应为 `success: false`、`code: 40501`、`message: "请求方法不支持，请使用GET请求"`、`data: null`，也计入同一 IP 的限流额度；超限或 Redis 故障时优先返回对应限流错误。HEAD 请求遵循 HTTP 规范，不返回响应体。
+
+浏览器的 CORS 预检 OPTIONS 请求由跨域中间件先处理，允许时返回 HTTP 200 和 `OK`，不查询服务状态，也不消耗查询额度；随后实际 GET 请求仍执行 Redis 限流。
+
+接口返回前端、后端、消息服务、定时任务服务的存活状态。三个后端服务与系统设置共用同一套健康检查；前端独立检查 `/frontend-health`，不依赖后端。`online_accounts` 沿用仪表盘口径，统计真实建立 WebSocket 连接的闲鱼账号数，查询时直接读取消息服务，未使用仪表盘的 10 秒缓存。
+
+`total_users` 为系统总用户数，`total_accounts` 为全局闲鱼账号总数，与管理员仪表盘的「总用户数」「总账号数」共用统计 SQL，包含已停用用户及未在线账号。公开接口直接查询数据库，不使用管理员仪表盘的 3 秒缓存；两个总数在同一条 SQL 中读取，不返回用户或账号明细。
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "查询成功",
+  "data": {
+    "services": [
+      { "key": "frontend", "label": "前端服务", "online": true },
+      { "key": "backend-web", "label": "后端服务", "online": true },
+      { "key": "websocket", "label": "消息服务", "online": true },
+      { "key": "scheduler", "label": "定时任务服务", "online": true }
+    ],
+    "online_accounts": 0,
+    "online_accounts_available": true,
+    "online_accounts_message": "查询成功",
+    "total_users": 0,
+    "total_accounts": 0,
+    "totals_available": true,
+    "totals_message": "查询成功",
+    "checked_at": "2026-10-25T20:00:00+08:00"
+  }
+}
+```
+
+以上 JSON 仅说明响应格式，运行时全部返回实际探测结果；无法获取在线数量时返回 `online_accounts: null`、`online_accounts_available: false` 和中文原因，不用 0 冒充查询结果。接口只公开汇总数量，不返回账号 ID、服务内部地址或内部令牌。单个服务探测最多等待 5 秒，多个探测并行执行，响应禁止缓存。
+
+数据库总数查询失败或超时时返回 `total_users: null`、`total_accounts: null`、`totals_available: false`、`totals_message: "用户和账号总数暂不可用，请稍后重试"`，仍返回实际服务状态和可获取的在线数量。数据库查询含一次连接失败重试，总等待最多 5 秒，并与服务探测并行执行。部分数量不可用时，顶层仍为 `success: true`、`code: 200`，`message` 明确指出「在线账号数量」「用户和账号总数」中不可用的部分，调用方需同时检查对应的可用标志。
+
+限流使用全局 Redis 健康连接池和原子滑动窗口：同一客户端 IP 在任意连续 30 秒内最多访问 15 次，各后端进程共享额度。IP 通过公共方法读取 `X-Forwarded-For` 首个地址，写入 Redis 前哈希；前端代理覆盖客户端传入的 IP 头。前端前面另有反向代理时，应在 Nginx 为该受信任代理配置 `set_real_ip_from`、`real_ip_header` 和 `real_ip_recursive`，确保 `$remote_addr` 是客户端真实 IP。
+
+Vite 开发/预览环境和桌面启动器会识别公开接口的百分号编码路径，确保同样覆盖 IP 头并执行限流。这两种代理读取完整上游响应后才发送；后端 HTTP 5xx、连接失败或读取中断统一返回 `code: 50303`，避免半截 JSON 和重复响应。
+
+桌面启动器的公开状态请求不读取或转发请求体，避免客户端声明请求体后迟迟不发送内容而阻塞限流；普通业务 API 仍按原逻辑转发请求体。Docker Nginx 的公开接口每 5 秒重新解析后端服务名，后端容器重建换 IP 后无需为该接口重启前端。
+
+超限仍返回 HTTP 200，响应为 `success: false`、`code: 42901`、中文限流提示、`data: null`，并携带 `Retry-After` 等待秒数。Redis 异常返回 `code: 50301` 并拒绝查询；后端不可达时前端入口返回 `code: 50303`，不会返回虚假的服务状态。正常请求附带 `X-RateLimit-Limit`、`X-RateLimit-Window`、`X-RateLimit-Remaining` 响应头。
+
+### 数据库与初始化
+
+- 主系统启动时自动建表、自检、缺失字段补齐、默认数据初始化
+- 默认管理员：`admin` / `admin123`
+- 返佣系统启动时执行独立的数据库自检
+- 返佣系统表统一使用 `fy_` 前缀
+- 不依赖外键约束，关系由代码维护
+- 所有时间统一使用北京时间（`Asia/Shanghai`）
+
+### 统一响应格式
+
+后端采用统一响应包装，业务异常也返回 HTTP 200：
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "操作成功",
+  "data": {}
+}
+```
+
+## 构建脚本速查
+
+| 脚本 | 平台 | 作用 |
+|------|------|------|
+| `deploy.sh` | Linux | 生成远程镜像版 compose 并拉取镜像启动（首次部署） |
+| `deploy_remote.sh` | Linux | 使用远程 MySQL/Redis 部署，生成 `docker-compose.remote.yml` 与 `.env.remote` 并启动应用服务 |
+| `update.sh` | Linux | 拉取最新远程镜像并重建应用容器（后续更新） |
+| `build.sh` | Linux | 从源码全量构建所有 Docker 镜像并启动 |
+| `build_frontend.sh` | Linux | 单独重建并重启 Frontend 服务 |
+| `build_backend_web.sh` | Linux | 单独重建并重启 Backend-Web 服务 |
+| `build_websocket.sh` | Linux | 单独重建并重启 WebSocket 服务 |
+| `build_scheduler.sh` | Linux | 单独重建并重启 Scheduler 服务 |
+| `EXE打包构建.bat` | Windows | 使用 Nuitka 打包桌面启动器 EXE |
+| `离线依赖打包.bat` | Windows | 打包所有 Python 依赖供离线安装 |
+| `scripts/Pipeline脚本-xianyu-auto-reply.groovy` | Jenkins | CI/CD 流水线，构建多架构镜像并推送到阿里云 ACR |
+
+## 安全说明
+
+- **JWT 认证**：主系统与返佣系统都使用 JWT 做登录态控制
+- **密码存储**：密码使用哈希方式保存
+- **SQL 注入防护**：数据库访问使用参数化查询
+- **XSS 防护**：前端输入与展示做好校验与转义
+- **CORS 控制**：生产环境应限制到明确域名
+
+### 生产环境建议
+
+1. 立即修改默认管理员密码
+2. JWT 密钥由数据库统一托管，首次启动自动生成强随机密钥（无需手动设置）
+3. 设置正确的 `BACKEND_WEB_PUBLIC_URL` 与反向代理地址
+4. 为外网入口配置 HTTPS
+5. 定期备份 MySQL 与静态资源目录
+6. 确保 Playwright 浏览器已正确安装
+
+## 常见问题
+
+### 根目录 Docker Compose 没有启动返佣系统？
+
+当前 `docker-compose.yml` 只覆盖主系统。返佣系统需要单独启动。
+
+### 登录或发布时报浏览器缺失？
+
+Backend-Web 和 WebSocket 需要在对应 Python 环境依次执行：
+`python -m playwright install chromium`、`python -m patchright install chromium`。
+Docker 环境依赖各服务 Dockerfile 内已安装的浏览器。
+
+### Docker 部署端口冲突？
+
+修改根目录 `.env` 中的端口配置后重新部署。
+
+### 执行脚本报 `/bin/bash^M: 坏的解释器`？
+
+脚本文件包含 Windows 换行符（CRLF），Linux 无法识别。解决方法：
+
+```bash
+# 方法一：用 sed 去除 \r 后执行
+sed -i 's/\r$//' deploy.sh
+bash deploy.sh
+
+# 方法二：通过管道执行（推荐远程脚本使用）
+curl -fsSL https://xy-update.zhinianboke.com/deploy.sh | sed 's/\r$//' | bash
+```
+
+## 许可证
+
+本项目采用 [GNU Affero General Public License v3.0 (AGPL-3.0)](LICENSE) 开源协议。
+
+**⚠️ 禁止商业用途：本项目仅供学习研究使用，严禁任何形式的商业用途。**
+
+## 免责声明
+
+本项目仅供技术学习和研究使用，使用者需自行承担使用风险。请遵守相关平台的使用条款和法律法规。
+
+- 本项目不对使用本系统造成的任何后果负责
+- 请勿用于违反闲鱼平台规则的行为
+- 请勿用于商业用途
+- 使用本系统可能存在账号风险，请谨慎使用
 
 ## 🧸 特别鸣谢
 
@@ -720,70 +556,693 @@ powershell -ExecutionPolicy Bypass -File docker-deploy.bat
 
 感谢这些优秀的开源项目为本项目的开发提供了宝贵的参考和启发！
 
-## ⚖️ 版权声明与使用条款
 
-### 📋 重要声明
+## 公开账号查询接口
 
-**本项目仅供学习和研究使用，严禁商业用途！**
+所有公开接口的完整 URL 格式均为：
+`http(s)://<服务域名或IP>:<端口>/api/v1/...`。无需登录，使用个人设置「分销管理」中的
+`secret_key` 校验。
 
-### 🚫 使用限制
+### POST `/api/v1/external/enabled-accounts`
 
-- ❌ **禁止商业使用** - 本项目及其衍生作品不得用于任何商业目的
-- ❌ **禁止销售** - 不得以任何形式销售本项目或基于本项目的服务
-- ❌ **禁止盈利** - 不得通过本项目进行任何形式的盈利活动
-- ❌ **禁止违法使用** - 不得将本项目用于任何违法违规活动
+获取秘钥所属用户的全部闲鱼账号（包含已禁用账号）。
 
-### ✅ 允许使用
+请求头：`Content-Type: application/json`
 
-- ✅ **学习研究** - 可用于个人学习和技术研究
-- ✅ **非商业分享** - 可在非商业环境下分享和讨论
-- ✅ **开源贡献** - 欢迎为项目贡献代码和改进
+请求体：
 
-### 📝 使用要求
+| 参数 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| `secret_key` | string | 是 | 分销秘钥，最长 128 个字符 |
 
-如果您使用、修改或分发本项目，必须：
+```json
+{
+  "secret_key": "your-secret-key"
+}
+```
 
-1. **保留原作者信息** - 必须在显著位置标注原作者和项目来源
-2. **保留版权声明** - 不得删除或修改本版权声明
-3. **注明修改内容** - 如有修改，需明确标注修改部分
-4. **遵守开源协议** - 严格遵守项目的开源许可协议
+成功返回：
 
-### 👤 原作者信息
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "查询成功",
+  "data": {
+    "accounts": [
+      {
+        "account_id": "闲鱼账号ID",
+        "remark": "账号备注",
+        "enabled": true,
+        "status": "active",
+        "status_name": "启用",
+        "disable_reason": ""
+      }
+    ],
+    "total": 1,
+    "enabled_total": 1,
+    "disabled_total": 0
+  }
+}
+```
 
-- **项目作者**：zhinianboke
-- **项目地址**：https://github.com/zhinianboke/xianyu-auto-reply
-- **联系方式**：通过GitHub Issues或项目交流群
+`enabled` 表示账号当前是否可用；`status` 保留账号原始状态，`status_name` 为中文状态名称。
 
-### ⚠️ 免责声明
+### 外部账号 Cookie 同步
 
-1. **使用风险自负** - 使用本项目产生的任何风险由使用者自行承担
-2. **无质量保证** - 本项目按"现状"提供，不提供任何明示或暗示的保证
-3. **责任限制** - 作者不对使用本项目造成的任何损失承担责任
-4. **合规使用** - 使用者需确保使用行为符合当地法律法规
+供外部系统回传账号最新 Cookie。该接口只更新 Cookie，不重启账号 WebSocket 任务。
 
-### 📞 侵权处理
+#### POST `/api/v1/external/account-cookie/sync`
 
-如发现本项目存在侵权内容，请通过以下方式联系：
+请求头：`Content-Type: application/json`
 
-- **GitHub Issues**：https://github.com/zhinianboke/xianyu-auto-reply/issues
-- **邮箱联系**：在项目交流群中获取联系方式
+请求体：
 
-我们将在收到通知后**立即处理**并删除相关内容。
+| 参数 | 类型 | 必填 | 限制/说明 |
+| --- | --- | --- | --- |
+| `secret_key` | string | 是 | 分销秘钥，最长 128 个字符，必须属于目标账号所属用户 |
+| `account_id` | string | 是 | 闲鱼账号 ID，最长 80 个字符 |
+| `cookies` | string | 是 | 最新 Cookie 字符串，最长 16384 个字符，必须包含登录态 `unb` |
 
-### 🤝 合作与授权
+```json
+{
+  "secret_key": "your-secret-key",
+  "account_id": "闲鱼账号ID",
+  "cookies": "unb=...; _m_h5_tk=...; ..."
+}
+```
 
-如需商业使用或特殊授权，请通过项目交流群联系作者进行协商。
+成功返回：
 
----
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "Cookie 已更新",
+  "data": null
+}
+```
 
-**⚖️ 使用本项目即表示您已阅读、理解并同意遵守以上所有条款。**
+失败时同样固定返回 HTTP `200`，并通过 `success=false`、`code` 和中文 `message`
+表达业务错误。常见错误码为：`40001`（秘钥无效/用户不可用）、`40002`（账号不存在或秘钥与账号不匹配）、
+`40007`（Cookie 格式或归属校验失败）、`40008`（请求参数不完整）、
+`50001`（账号、秘钥或 Cookie 更新失败）。
 
----
+## 公开商品发布相关接口
 
-🎉 **开始使用闲鱼自动回复系统，让您的闲鱼店铺管理更加智能高效！**
+建议按以下顺序调用：
 
-**请记住：仅限学习使用，禁止商业用途！**
+1. 调用公开账号查询接口获取 `account_id`。
+2. 调用分类推荐接口获取 `category` 和完整 `card_list`。
+3. 如需填写平台动态属性，调用分类属性接口。
+4. 调用媒体上传接口上传图片/视频，取得 `media_id`。
+5. 调用单品发布接口。
+
+### 1. 分类推荐
+
+#### POST `/api/v1/external/category/recommend`
+
+请求头：`Content-Type: application/json`
+
+请求体：
+
+| 参数 | 类型 | 必填 | 限制/说明 |
+| --- | --- | --- | --- |
+| `secret_key` | string | 是 | 分销秘钥，最长 128 个字符 |
+| `account_id` | string | 是 | 闲鱼账号 ID，最长 80 个字符，必须属于该秘钥用户 |
+| `description` | string | 是 | 商品描述，最长 1500 个字符 |
+
+```json
+{
+  "secret_key": "your-secret-key",
+  "account_id": "闲鱼账号ID",
+  "description": "全新未拆封的商品，支持官方验货，配件齐全"
+}
+```
+
+成功返回：
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "分类推荐成功",
+  "data": {
+    "candidates": [
+      {
+        "cat_id": "平台末级分类ID",
+        "cat_name": "分类名称",
+        "channel_cat_id": "频道分类ID",
+        "channel_cat_name": "频道分类名称",
+        "leaf_id": "叶子分类ID",
+        "tb_cat_id": "淘宝分类ID",
+        "path": [
+          {"id": "100", "name": "一级分类"},
+          {"id": "10001", "name": "末级分类"}
+        ],
+        "score": 0.98,
+        "is_selected": false
+      }
+    ],
+    "properties": [
+      {
+        "property_id": "属性ID",
+        "property_name": "品牌",
+        "input_word": null,
+        "is_multiple": false,
+        "is_decisive_property": false,
+        "options": [
+          {
+            "property_id": "属性ID",
+            "property_name": "品牌",
+            "value_id": "属性值ID",
+            "value_name": "品牌名称",
+            "channel_cat_id": "频道分类ID",
+            "tb_cat_id": "淘宝分类ID"
+          }
+        ]
+      }
+    ],
+    "card_list": [],
+    "account_id": "闲鱼账号ID"
+  }
+}
+```
+
+`card_list` 是平台返回的完整属性卡片数组。调用分类属性接口时必须原样传回该数组；
+`candidates` 中的分类对象可直接作为后续接口的 `category`。
+
+### 2. 获取分类动态属性
+
+#### POST `/api/v1/external/category/properties`
+
+请求头：`Content-Type: application/json`
+
+请求体：
+
+| 参数 | 类型 | 必填 | 限制/说明 |
+| --- | --- | --- | --- |
+| `secret_key` | string | 是 | 分销秘钥，最长 128 个字符 |
+| `account_id` | string | 是 | 闲鱼账号 ID，最长 80 个字符 |
+| `description` | string | 是 | 商品描述，最长 1500 个字符 |
+| `category` | object | 是 | 分类推荐接口 `data.candidates` 中选中的分类对象；至少提供 `cat_id`、`cat_name`、`channel_cat_id`、`tb_cat_id` 之一 |
+| `card_list` | object[] | 是 | 分类推荐接口返回的完整 `data.card_list`，最多 100 条 |
+
+```json
+{
+  "secret_key": "your-secret-key",
+  "account_id": "闲鱼账号ID",
+  "description": "全新未拆封的商品，支持官方验货，配件齐全",
+  "category": {
+    "channel_cat_id": "频道分类ID",
+    "channel_cat_name": "频道分类名称",
+    "cat_name": "末级分类名称",
+    "tb_cat_id": "淘宝分类ID"
+  },
+  "card_list": []
+}
+```
+
+成功返回结构与分类推荐接口相同：`data.candidates`、`data.properties`、
+`data.card_list`、`data.account_id`；成功消息为「分类属性获取成功」。
+
+### 3. 上传发布媒体
+
+#### POST `/api/v1/external/publish/media`
+
+请求类型：`multipart/form-data`。
+
+| 表单参数 | 类型 | 必填 | 限制/说明 |
+| --- | --- | --- | --- |
+| `secret_key` | string | 是 | 分销秘钥，最长 128 个字符 |
+| `account_id` | string | 是 | 闲鱼账号 ID，最长 80 个字符 |
+| `media_type` | string | 是 | `image` 商品图片、`spec_image` 规格图片或 `video` 商品视频 |
+| `file` | file | 是 | 要上传的媒体文件 |
+
+```bash
+curl -X POST "http(s)://<服务域名或IP>:<端口>/api/v1/external/publish/media" \
+  -F "secret_key=your-secret-key" \
+  -F "account_id=闲鱼账号ID" \
+  -F "media_type=image" \
+  -F "file=@/path/to/image.jpg"
+```
+
+成功返回：
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "媒体上传成功",
+  "data": {
+    "media_id": "image_0123456789abcdef0123456789abcdef",
+    "media_type": "image",
+    "name": "image_0123456789abcdef0123456789abcdef.jpg",
+    "size": 123456
+  }
+}
+```
+
+`media_id` 只能在生成它的同一个 `account_id` 下的单品发布请求中使用，不能跨账号使用，
+也不能把本地文件路径直接传给单品发布接口。
+
+### 4. 发布单个商品
+
+#### POST `/api/v1/external/publish/single`
+
+请求头：`Content-Type: application/json`
+
+请求体：
+
+| 参数 | 类型 | 必填 | 默认值 | 限制/说明 |
+| --- | --- | --- | --- | --- |
+| `secret_key` | string | 是 | - | 分销秘钥，最长 128 个字符 |
+| `account_id` | string | 是 | - | 闲鱼账号 ID，最长 80 个字符 |
+| `title` | string | 是 | - | 商品标题，最长 200 个字符 |
+| `description` | string | 是 | - | 商品描述，最长 1500 个字符 |
+| `price` | number | 是 | - | 商品售价，必须大于 0 |
+| `original_price` | number | 否 | - | 原价，必须大于 0 |
+| `image_media_ids` | string[] | 是 | - | 图片媒体 ID，至少 1 个、最多 9 个，必须为 `image` 类型 |
+| `video_media_ids` | string[] | 否 | `[]` | 最多 3 个，必须为 `video` 类型 |
+| `platform_category_id` | string | 否 | - | 平台末级分类 ID |
+| `platform_category_name` | string | 否 | - | 平台分类名称 |
+| `platform_channel_category_id` | string | 否 | - | 频道分类 ID |
+| `platform_channel_category_name` | string | 否 | - | 频道分类名称 |
+| `platform_leaf_id` | string | 否 | - | 叶子分类 ID |
+| `platform_tb_category_id` | string | 否 | - | 淘宝分类 ID |
+| `platform_attributes` | object[] | 否 | `[]` | 平台属性，最多 30 条 |
+| `quantity` | integer | 否 | `1` | 库存数量，1～999999 |
+| `specifications` | object[] | 否 | `[]` | 最多 2 个规格维度 |
+| `sku_rows` | object[] | 否 | `[]` | 最多 200 条 SKU |
+| `address` | string | 是 | - | 宝贝所在地，最长 200 个字符；需传外部系统已选择的地址关键词 |
+| `address_expected_text` | string | 否 | - | 地址预期展示文本，最长 200 个字符 |
+| `delivery_method` | string | 否 | `express` | `express` 快递或 `pickup` 自提 |
+| `shipping_method` | string | 否 | `free` | `free` 包邮、`distance` 按距离计费、`fixed` 一口价、`template` 运费模板、`none` 无需邮寄 |
+| `postage` | number | 否 | `0` | `shipping_method=fixed` 时的运费，0～1000 元 |
+| `support_pickup` | boolean | 否 | `false` | 是否支持自提；与 `shipping_method` 独立 |
+
+`platform_attributes` 每项可传：`property_id`（最长 64）、`property_name`（最长 100）、
+`value_id`（最长 64）、`value_name`（最长 200）、`text`（最长 200）、
+`properties`（最长 500）。
+
+`specifications` 每项包含 `name`（必填，最长 100）、`support_image`（默认 `false`）和
+`values`（最多 50 项）；`values` 每项包含 `name`（必填，最长 100）及可选的
+`image_media_id`（必须是同账号的 `spec_image` 媒体 ID）。
+
+`sku_rows` 每项包含 `specs`（规格名到规格值的对象，最多 4 个键）、`price`（大于 0）、
+`stock`（0～999999）。
+
+请求示例：
+
+```json
+{
+  "secret_key": "your-secret-key",
+  "account_id": "闲鱼账号ID",
+  "title": "全新商品标题",
+  "description": "商品详细描述",
+  "price": 99.9,
+  "original_price": 129.9,
+  "image_media_ids": ["image_0123456789abcdef0123456789abcdef"],
+  "video_media_ids": [],
+  "platform_category_id": "平台分类ID",
+  "platform_category_name": "平台分类名称",
+  "platform_channel_category_id": "频道分类ID",
+  "platform_channel_category_name": "频道分类名称",
+  "platform_leaf_id": "叶子分类ID",
+  "platform_tb_category_id": "淘宝分类ID",
+  "platform_attributes": [],
+  "quantity": 1,
+  "specifications": [],
+  "sku_rows": [],
+  "address": "上海市",
+  "address_expected_text": "上海",
+  "delivery_method": "express",
+  "shipping_method": "free",
+  "postage": 0,
+  "support_pickup": false
+}
+```
+
+成功返回：
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "商品发布成功",
+  "data": {
+    "item_url": "商品详情链接",
+    "item_id": "平台商品ID",
+    "log_id": 123,
+    "sync_status": "success",
+    "sync_message": "已自动获取商品并入库 1 个商品",
+    "sync_total_count": 1,
+    "sync_saved_count": 1
+  }
+}
+```
+
+发布失败时仍返回 HTTP `200`，`success=false`、`code=40009`；媒体不存在、类型不匹配或
+媒体不属于目标账号时返回 `40007`。
+
+### 商品发布相关接口常见错误码
+
+| `code` | 含义 |
+| --- | --- |
+| `40001` | 分销秘钥为空、超长或不存在 |
+| `40002` | 闲鱼账号 ID 为空、超长、不存在或不属于该秘钥用户 |
+| `40004` | 商品描述为空或超长（分类接口） |
+| `40005` | 分类推荐/动态属性获取失败 |
+| `40006` | 分类选择数据缺失、`category`/`card_list` 格式错误 |
+| `40007` | 媒体参数或媒体文件错误 |
+| `40008` | 发布请求参数格式错误或必填字段为空 |
+| `40009` | 商品发布执行失败 |
+| `50001` | 服务端查询或处理失败，请稍后重试 |
+
+## 公开订单查询接口
+
+接口地址：`/api/v1/external/orders`，完整 URL 格式为
+`http(s)://<服务域名或IP>:<端口>/api/v1/external/orders`。无需登录，使用用户分销秘钥校验，只返回该秘钥所属用户的订单。
+
+### 1. POST JSON 调用
+
+```http
+POST /api/v1/external/orders
+Content-Type: application/json
+```
+
+请求体：
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `secret_key` | string | 是 | - | 个人设置-分销管理中的分销秘钥，最长 128 个字符 |
+| `item_ids` | string[] | 否 | `[]` | 商品 ID 数组，最多 100 个；不传表示查询该秘钥所属用户的全部订单 |
+| `item_id` | string | 否 | - | 单个或多个商品 ID，多个 ID 用英文逗号分隔；也可与 `item_ids` 同时传 |
+| `order_no` | string | 否 | - | 订单号，精确查询，最长 64 个字符 |
+| `page` | integer | 否 | `1` | 页码，从 1 开始 |
+| `page_size` | integer | 否 | `20` | 每页数量，取值 1～100 |
+
+示例：
+
+```json
+{
+  "secret_key": "your-secret-key",
+  "item_ids": ["商品ID1", "商品ID2"],
+  "order_no": "订单号（可选）",
+  "page": 1,
+  "page_size": 20
+}
+```
+
+### 2. GET 查询参数调用
+
+```http
+GET /api/v1/external/orders?secret_key=your-secret-key&page=1&page_size=20
+```
+
+GET 参数与 POST 参数含义相同。商品 ID 支持以下两种传法：
+
+```http
+# 重复传 item_id
+GET /api/v1/external/orders?secret_key=your-secret-key&item_id=商品ID1&item_id=商品ID2&page=1&page_size=20
+
+# item_ids 使用逗号分隔
+GET /api/v1/external/orders?secret_key=your-secret-key&item_ids=商品ID1,商品ID2&page=1&page_size=20
+```
+
+`order_no` 可以单独传，也可以和商品 ID、分页参数一起传；多个筛选条件同时传入时按“同时满足”查询。
+
+### 3. 成功返回
+
+HTTP 状态码固定为 `200`，业务结果通过响应体判断：
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "订单查询成功",
+  "data": {
+    "list": [
+      {
+        "id": "订单数据库ID",
+        "order_no": "订单号",
+        "order_id": "订单号（与 order_no 相同）",
+        "item_id": "商品ID",
+        "item_title": "商品标题",
+        "status": "订单状态（小写）",
+        "buyer_id": "买家ID",
+        "buyer_nick": "买家昵称",
+        "buyer_fish_nick": "买家闲鱼昵称",
+        "chat_id": "聊天会话ID",
+        "spec_name": "规格名称",
+        "spec_value": "规格值",
+        "sku_info": "规格名称 / 规格值",
+        "quantity": 1,
+        "amount": "99.00",
+        "currency": "CNY",
+        "account_id": "闲鱼账号ID",
+        "cookie_id": "闲鱼账号ID（与 account_id 相同）",
+        "account_name": "闲鱼账号名称",
+        "is_bargain": false,
+        "is_rated": false,
+        "is_red_flower": false,
+        "is_unregistered": false,
+        "unregister_error_reason": "",
+        "receiver_name": "收货人",
+        "receiver_phone": "收货电话",
+        "receiver_address": "收货地址",
+        "delivery_method": "auto",
+        "delivery_content": "发货内容",
+        "delivery_fail_reason": "",
+        "card_only_delivered": false,
+        "delivery_send_status": "success",
+        "delivery_send_fail_reason": null,
+        "source": "数据来源",
+        "placed_at": "2026-01-01T12:00:00+08:00",
+        "synced_at": "2026-01-01T12:01:00+08:00",
+        "created_at": "2026-01-01T12:01:00+08:00",
+        "updated_at": "2026-01-01T12:01:00+08:00"
+      }
+    ],
+    "orders": [
+      {
+        "id": "订单数据库ID",
+        "order_no": "订单号",
+        "order_id": "订单号（与 order_no 相同）",
+        "item_id": "商品ID",
+        "item_title": "商品标题",
+        "status": "订单状态（小写）",
+        "buyer_id": "买家ID",
+        "buyer_nick": "买家昵称",
+        "buyer_fish_nick": "买家闲鱼昵称",
+        "chat_id": "聊天会话ID",
+        "spec_name": "规格名称",
+        "spec_value": "规格值",
+        "sku_info": "规格名称 / 规格值",
+        "quantity": 1,
+        "amount": "99.00",
+        "currency": "CNY",
+        "account_id": "闲鱼账号ID",
+        "cookie_id": "闲鱼账号ID（与 account_id 相同）",
+        "account_name": "闲鱼账号名称",
+        "is_bargain": false,
+        "is_rated": false,
+        "is_red_flower": false,
+        "is_unregistered": false,
+        "unregister_error_reason": "",
+        "receiver_name": "收货人",
+        "receiver_phone": "收货电话",
+        "receiver_address": "收货地址",
+        "delivery_method": "auto",
+        "delivery_content": "发货内容",
+        "delivery_fail_reason": "",
+        "card_only_delivered": false,
+        "delivery_send_status": "success",
+        "delivery_send_fail_reason": null,
+        "source": "数据来源",
+        "placed_at": "2026-01-01T12:00:00+08:00",
+        "synced_at": "2026-01-01T12:01:00+08:00",
+        "created_at": "2026-01-01T12:01:00+08:00",
+        "updated_at": "2026-01-01T12:01:00+08:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+`orders` 与 `list` 返回相同的订单数组，保留该字段用于兼容不同调用方。无匹配订单时，`list` 和 `orders` 为空数组，`total` 为 `0`，`total_pages` 为 `0`。没有对应自动发货日志时，`delivery_send_status` 和 `delivery_send_fail_reason` 为 `null`；没有值的普通文本字段返回空字符串，时间字段可能为 `null`。
+
+### 4. 失败返回
+
+失败时同样返回 HTTP `200`：
+
+```json
+{
+  "success": false,
+  "code": 40001,
+  "message": "秘钥不存在",
+  "data": null
+}
+```
+
+常见业务码：
+
+| `code` | 含义 |
+| --- | --- |
+| `40001` | 秘钥为空、长度超限、秘钥不存在或对应用户不可用 |
+| `40008` | 请求参数格式错误（如商品 ID 为空/超过 100 个、分页参数非法等） |
+| `50001` | 订单信息查询失败，请稍后重试 |
+
+## 公开消息日志查询接口
+
+接口地址：`/api/v1/external/message-logs`，完整 URL 格式为
+`http(s)://<服务域名或IP>:<端口>/api/v1/external/message-logs`。无需登录，使用分销秘钥校验，只返回该秘钥所属用户指定商品的消息日志。
+
+### POST JSON
+
+```http
+POST /api/v1/external/message-logs
+Content-Type: application/json
+```
+
+```json
+{
+  "secret_key": "your-secret-key",
+  "item_id": "商品ID",
+  "message_type": "auto_reply",
+  "page": 1,
+  "page_size": 20
+}
+```
+
+### GET 查询参数
+
+```http
+GET /api/v1/external/message-logs?secret_key=your-secret-key&item_id=商品ID&message_type=auto_reply&page=1&page_size=20
+```
+
+参数说明：
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `secret_key` | string | 是 | - | 分销秘钥，最长 128 个字符 |
+| `item_id` | string | 是 | - | 商品 ID，最长 64 个字符，精确匹配 |
+| `message_type` | string | 否 | `auto_reply` | `auto_reply` 自动回复，`auto_delivery` 自动发货 |
+| `page` | integer | 否 | `1` | 页码，从 1 开始 |
+| `page_size` | integer | 否 | `20` | 每页数量，取值 1～100 |
+
+成功返回：
+
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "消息日志查询成功",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "account_id": "闲鱼账号ID",
+        "account_name": "账号名称",
+        "chat_id": "聊天会话ID",
+        "item_id": "商品ID",
+        "item_title": "商品标题",
+        "order_no": "订单号",
+        "source_message_id": "源消息ID",
+        "sender_user_id": "发送方用户ID",
+        "sender_user_name": "发送方昵称",
+        "source_message": "收到的消息",
+        "source_message_time": "2026-01-01T12:00:00+08:00",
+        "process_status": "success",
+        "decision_reason": "reply_sent",
+        "reply_strategy": "keyword",
+        "reply_mode": "text",
+        "matched_keyword": "关键词",
+        "matched_rule_type": "keyword_item",
+        "default_reply_scope": "item",
+        "default_reply_once": false,
+        "ai_model_name": null,
+        "ai_provider_name": null,
+        "reply_text": "回复内容",
+        "reply_image_url": null,
+        "error_message": null,
+        "send_status": "success",
+        "send_fail_reason": null,
+        "created_at": "2026-01-01T12:00:01+08:00",
+        "updated_at": "2026-01-01T12:00:01+08:00"
+      }
+    ],
+    "logs": [
+      {
+        "id": 1,
+        "account_id": "闲鱼账号ID",
+        "account_name": "账号名称",
+        "chat_id": "聊天会话ID",
+        "item_id": "商品ID",
+        "item_title": "商品标题",
+        "order_no": "订单号",
+        "source_message_id": "源消息ID",
+        "sender_user_id": "发送方用户ID",
+        "sender_user_name": "发送方昵称",
+        "source_message": "收到的消息",
+        "source_message_time": "2026-01-01T12:00:00+08:00",
+        "process_status": "success",
+        "decision_reason": "reply_sent",
+        "reply_strategy": "keyword",
+        "reply_mode": "text",
+        "matched_keyword": "关键词",
+        "matched_rule_type": "keyword_item",
+        "default_reply_scope": "item",
+        "default_reply_once": false,
+        "ai_model_name": null,
+        "ai_provider_name": null,
+        "reply_text": "回复内容",
+        "reply_image_url": null,
+        "error_message": null,
+        "send_status": "success",
+        "send_fail_reason": null,
+        "created_at": "2026-01-01T12:00:01+08:00",
+        "updated_at": "2026-01-01T12:00:01+08:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+`logs` 与 `list` 返回相同的日志数组。无匹配日志时，`list`、`logs` 为空数组，`total` 和 `total_pages` 为 `0`。失败时也返回 HTTP `200`，例如：
+
+```json
+{
+  "success": false,
+  "code": 40008,
+  "message": "商品ID不能为空",
+  "data": null
+}
+```
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=zhinianboke/xianyu-auto-reply&type=Date)](https://www.star-history.com/#zhinianboke/xianyu-auto-reply&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=zhinianboke/xianyu-auto-reply&type=Date)](https://star-history.dera.page/#zhinianboke/xianyu-auto-reply&Date)
+
+## 移动端 App (xianyu-mobile)
+
+本仓库包含一个 Android 移动端客户端，位于 `xianyu-mobile/` 目录。
+
+- 基于 Expo SDK 57 + React Native 0.86.2 + React 19
+- 50+ 页面，4 大 Tab（消息/订单/商品/我的）
+- 蓝白冷色系设计系统，13 个自研 UI 组件
+- 多类型卡券、AI 上架、左滑操作、条形图可视化
+- 与本后端完全解耦，用户自托管服务器即可使用
+- 支持 OpenAPI 契约驱动的类型安全 API 调用
+
+详见 [xianyu-mobile/README.md](xianyu-mobile/README.md)。
+
+![我的页面](xianyu-mobile/docs/screenshots/mine.png)
