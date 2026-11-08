@@ -1,13 +1,12 @@
 #!/bin/bash
 # ==========================================
 # 闲鱼自动回复系统 - 一键部署脚本
-# 自动生成远程镜像版 docker-compose.deploy.yml 并拉取镜像启动
+# 自动检查并安装 Docker/Compose，生成配置并拉取远程镜像启动
 # 用法: bash deploy.sh
 # ==========================================
 
 set -e
 
-RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
@@ -23,23 +22,269 @@ echo "=========================================="
 echo ""
 
 # ========== 检查环境 ==========
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}错误: Docker 未安装，请先安装 Docker${NC}"
-    echo "安装教程: https://docs.docker.com/get-docker/"
-    exit 1
-fi
+INSTALL_ROOT=()
+DOCKER_PREFIX=()
+INSTALL_OS=''
+INSTALL_OS_VERSION=''
+INSTALL_APT_UPDATED=0
 
-if docker compose version &> /dev/null; then
-    DC="docker compose"
-elif command -v docker-compose &> /dev/null; then
-    DC="docker-compose"
-else
-    echo -e "${RED}错误: Docker Compose 未安装${NC}"
+install_error() {
+    printf '[错误] %s\n' "$*" >&2
     exit 1
-fi
+}
+
+# 安装和启动系统服务时使用 root 或免密 sudo，避免 SSH/管道执行等待密码。
+require_install_root() {
+    if [ "$EUID" -ne 0 ]; then
+        command -v sudo >/dev/null 2>&1 && sudo -n true ||
+            install_error '自动安装或启动 Docker 需要 root 或免密 sudo，请使用具备权限的账号'
+        INSTALL_ROOT=(sudo -n)
+    fi
+}
+
+install_as_root() {
+    "${INSTALL_ROOT[@]}" "$@" </dev/null
+}
+
+# Debian 默认源切换至清华镜像；先备份完整 APT 配置，保留版本、组件、签名及第三方源。
+configure_debian_mirror() {
+    [ "$INSTALL_OS" = debian ] || return 0
+    require_install_root
+    local backup_dir="/etc/apt.backup.$(date +%Y%m%d%H%M%S).$$" source_file
+    install_as_root cp -a -- /etc/apt "$backup_dir" || install_error '备份 APT 配置失败，未切换软件源'
+    echo "[信息] APT 配置已备份：$backup_dir"
+    echo '[信息] 正在将 Debian 默认软件源切换至清华镜像…'
+    for source_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources \
+        /etc/apt/mirrors/debian.list /etc/apt/mirrors/debian-security.list; do
+        install_as_root test -f "$source_file" || continue
+        install_as_root sed -i -E \
+            -e 's#https?://(deb|security)\.debian\.org/debian-security/?([[:space:]]|$)#https://mirrors.tuna.tsinghua.edu.cn/debian-security/\2#g' \
+            -e 's#https?://deb\.debian\.org/debian/?([[:space:]]|$)#https://mirrors.tuna.tsinghua.edu.cn/debian/\1#g' \
+            -e 's#mirror\+file:/+etc/apt/mirrors/debian-security\.list([[:space:]]|$)#https://mirrors.tuna.tsinghua.edu.cn/debian-security/\1#g' \
+            -e 's#mirror\+file:/+etc/apt/mirrors/debian\.list([[:space:]]|$)#https://mirrors.tuna.tsinghua.edu.cn/debian/\1#g' \
+            "$source_file" || install_error "切换 Debian 软件源失败：$source_file，原配置备份于 $backup_dir"
+    done
+}
+
+# 使用用户提供的 CentOS 7/8 阿里云配置；CentOS 8 分别下载 BaseOS 和 AppStream 文件。
+configure_centos_mirror() {
+    [ "$INSTALL_OS" = centos ] || return 0
+    require_install_root
+    local repo_url source_file index
+    local -a repo_targets=() download_files=()
+    local backup_suffix="$(date +%Y%m%d%H%M%S).$$" repo_dir=/etc/yum.repos.d
+    if grep -qs 'CentOS Stream' /etc/*release*; then
+        install_error 'CentOS Stream 不能使用 CentOS Linux 7/8 软件源，请先配置匹配的软件源'
+    fi
+    case "$INSTALL_OS_VERSION" in
+        7) repo_url=http://mirrors.aliyun.com/repo/Centos-7.repo; repo_targets=("$repo_dir/CentOS-Base.repo") ;;
+        8) repo_url=http://mirrors.aliyun.com/repo/Centos-8.repo; repo_targets=("$repo_dir/CentOS-Linux-BaseOS.repo" "$repo_dir/CentOS-Linux-AppStream.repo") ;;
+        *) install_error "自动换源仅支持 CentOS Linux 7/8，当前版本为 $INSTALL_OS_VERSION" ;;
+    esac
+    echo "[信息] 正在下载 CentOS $INSTALL_OS_VERSION 阿里云软件源…"
+    for ((index=0; index<${#repo_targets[@]}; index++)); do
+        download_files[index]=$(mktemp) ||
+            { rm -f -- "${download_files[@]}"; install_error '无法创建 CentOS 软件源下载临时文件'; }
+        download_install_file "$repo_url" "${download_files[index]}" ||
+            { rm -f -- "${download_files[@]}"; install_error "下载 CentOS 阿里云软件源失败：${repo_targets[index]}，未切换软件源"; }
+        if ! grep -q '^\[base\]' "${download_files[index]}" || \
+            { [ "$INSTALL_OS_VERSION" = 8 ] && ! grep -q '^\[AppStream\]' "${download_files[index]}"; }; then
+            rm -f -- "${download_files[@]}"
+            install_error '下载的 CentOS 软件源缺少 BaseOS 或 AppStream 配置，未切换软件源'
+        fi
+    done
+    install_as_root cp -a -- "$repo_dir" "$repo_dir.backup.$backup_suffix" ||
+        { rm -f -- "${download_files[@]}"; install_error '备份 YUM 配置失败，未切换软件源'; }
+    echo "[信息] YUM 配置已备份：$repo_dir.backup.$backup_suffix"
+    for source_file in "$repo_dir"/CentOS-*.repo; do
+        install_as_root test -f "$source_file" || continue
+        install_as_root mv -- "$source_file" "$source_file.backup.$backup_suffix" ||
+            { rm -f -- "${download_files[@]}"; install_error "备份旧 CentOS 软件源失败：$source_file"; }
+    done
+    for ((index=0; index<${#repo_targets[@]}; index++)); do
+        install_as_root install -m 0644 "${download_files[index]}" "${repo_targets[index]}" ||
+            { rm -f -- "${download_files[@]}"; install_error "写入 CentOS 阿里云软件源失败，原配置备份于 $repo_dir.backup.$backup_suffix"; }
+    done
+    rm -f -- "${download_files[@]}"
+    install_as_root yum clean all || install_error '清理 YUM 缓存失败'
+    install_as_root yum makecache || install_error '刷新 YUM 缓存失败，请检查阿里云软件源和网络'
+    install_as_root yum update -y || install_error '更新 CentOS 系统软件包失败，请检查软件源和网络'
+}
+
+# Debian/Ubuntu 安装软件前刷新索引；任一软件源更新失败立即停止，同次部署只刷新一次。
+update_install_index() {
+    if [ "$INSTALL_PM" != apt ] || [ "$INSTALL_APT_UPDATED" = 1 ]; then return; fi
+    echo '[信息] 正在更新 APT 软件包索引…'
+    install_as_root apt-get -o APT::Update::Error-Mode=any update ||
+        install_error 'APT 软件包索引更新失败，请检查软件源和网络后重试'
+    INSTALL_APT_UPDATED=1
+}
+
+# 以安装权限检查配置和符号链接，避免普通账号无读取权限时误判为不存在。
+install_path_exists() {
+    install_as_root test -e "$1" || install_as_root test -L "$1"
+}
+
+# 统一用 curl 将地址 $1 下载到文件 $2；自动补齐 curl，返回下载状态并保留错误输出。
+download_install_file() {
+    if ! command -v curl >/dev/null 2>&1; then
+        require_install_root
+        detect_install_os
+        update_install_index
+        echo '[信息] curl 未安装，开始自动安装下载工具…'
+        install_as_root "$INSTALL_PM" install -y curl || install_error '安装 curl 下载工具失败'
+    fi
+    curl -fsSL --retry 3 --connect-timeout 30 --max-time 120 -o "$2" "$1" </dev/null
+}
+
+# 仅缺少组件时识别发行版；已可用的 Docker/Compose 不重复安装。
+detect_install_os() {
+    local ID='' VERSION_ID=''
+    [ -r /etc/os-release ] || install_error '无法识别 Linux 发行版：缺少 /etc/os-release'
+    . /etc/os-release
+    INSTALL_OS="$ID"
+    INSTALL_OS_VERSION="${VERSION_ID%%.*}"
+    case "$ID" in
+        ubuntu|debian) INSTALL_PM=apt ;;
+        centos) INSTALL_PM=yum ;;
+        *) install_error "自动安装暂不支持 $ID，请手动安装 Docker 与 Compose 后重试" ;;
+    esac
+    command -v "$INSTALL_PM" >/dev/null 2>&1 || install_error "缺少包管理器 $INSTALL_PM"
+}
+
+# 直接采用 build-env1.sh 的 Docker 包、阿里云源和 daemon.json 下载地址。
+install_docker() {
+    # 软件源切换仅在 Docker 命令不存在时执行，已安装的环境及其软件源保持原样。
+    if type -P docker >/dev/null 2>&1; then return; fi
+    require_install_root
+    detect_install_os
+    echo '[信息] Docker 未安装，开始自动安装…'
+    configure_debian_mirror
+    configure_centos_mirror
+    if [ "$INSTALL_PM" = apt ]; then
+        update_install_index
+        install_as_root env DEBIAN_FRONTEND=noninteractive apt install -y docker.io || install_error 'Docker 安装失败'
+    else
+        install_as_root yum install -y yum-utils device-mapper-persistent-data lvm2 ||
+            install_error '安装 Docker 软件源依赖失败'
+        if install_path_exists /etc/yum.repos.d/docker-ce.repo; then
+            install_as_root cp -a -- /etc/yum.repos.d/docker-ce.repo "/etc/yum.repos.d/docker-ce.repo.backup.$(date +%Y%m%d%H%M%S).$$" ||
+                install_error '备份已有 Docker 软件源失败'
+        fi
+        install_as_root yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo ||
+            install_error '添加阿里云 Docker CE 软件源失败'
+        install_as_root yum install -y docker-ce docker-ce-cli containerd.io || install_error 'Docker CE 安装失败'
+        install_as_root systemctl enable docker || install_error '设置 Docker 开机启动失败'
+        install_as_root systemctl start docker || install_error 'Docker 启动失败'
+    fi
+    type -P docker >/dev/null 2>&1 || install_error '安装完成后仍未找到 Docker 命令'
+    # 下载参考脚本使用的配置；已有配置保留，避免覆盖服务器原有设置。
+    if ! install_path_exists /etc/docker/daemon.json; then
+        local config_file
+        config_file=$(mktemp) || install_error '无法创建 Docker 配置临时文件'
+        download_install_file 'https://selfdownload.zhinianboke.com/file/website/docker/daemon.json' "$config_file" ||
+            { rm -f -- "$config_file"; install_error '下载 Docker 配置失败'; }
+        install_as_root mkdir -p /etc/docker ||
+            { rm -f -- "$config_file"; install_error '创建 Docker 配置目录失败'; }
+        install_as_root install -m 0644 "$config_file" /etc/docker/daemon.json ||
+            { rm -f -- "$config_file"; install_error '写入 Docker 配置失败'; }
+        rm -f -- "$config_file"
+        install_as_root systemctl restart docker.service || install_error '应用 Docker 配置并重启失败'
+    fi
+}
+
+# 所有部署阶段的 Docker 调用使用同一权限；command 避免同名函数递归。
+docker() {
+    command "${DOCKER_PREFIX[@]}" docker "$@"
+}
+
+# 优先使用插件，也兼容已有可执行的 docker-compose 独立命令。
+select_compose() {
+    if docker compose version >/dev/null 2>&1; then
+        DC="${DOCKER_PREFIX[*]:+${DOCKER_PREFIX[*]} }docker compose"
+    elif command "${DOCKER_PREFIX[@]}" docker-compose version >/dev/null 2>&1; then
+        DC="${DOCKER_PREFIX[*]:+${DOCKER_PREFIX[*]} }docker-compose"
+    else
+        return 1
+    fi
+}
+
+# 采用 build-env1.sh 的 docker-compose 文件、安装位置和软链接。
+install_compose() {
+    require_install_root
+    local compose_file target=/usr/local/bin/docker-compose link=/usr/bin/docker-compose
+    echo '[信息] docker-compose 未安装，开始从参考脚本地址下载安装…'
+    compose_file=$(mktemp) || install_error '无法创建 docker-compose 下载临时文件'
+    download_install_file 'https://selfdownload.zhinianboke.com/file/website/docker/docker-compose' "$compose_file" ||
+        { rm -f -- "$compose_file"; install_error 'docker-compose 下载失败'; }
+    install_as_root mkdir -p /usr/local/bin ||
+        { rm -f -- "$compose_file"; install_error '创建 docker-compose 安装目录失败'; }
+    if install_path_exists "$target"; then
+        install_as_root cp -a -- "$target" "$target.backup.$(date +%Y%m%d%H%M%S).$$" ||
+            { rm -f -- "$compose_file"; install_error '备份已有 docker-compose 文件失败'; }
+    fi
+    install_as_root install -m 0755 "$compose_file" "$target" ||
+        { rm -f -- "$compose_file"; install_error '安装 docker-compose 文件失败'; }
+    rm -f -- "$compose_file"
+    if install_path_exists "$link" && [ "$(install_as_root readlink "$link" || true)" != "$target" ]; then
+        install_as_root mv -- "$link" "$link.backup.$(date +%Y%m%d%H%M%S).$$" ||
+            install_error '备份已有 docker-compose 链接失败'
+    fi
+    if ! install_path_exists "$link"; then
+        install_as_root ln -s "$target" "$link" || install_error '创建 docker-compose 软链接失败'
+    fi
+    command "${DOCKER_PREFIX[@]}" "$target" --version ||
+        install_error '下载的 docker-compose 无法运行，请检查服务器架构及运行依赖'
+    # 使用完整路径，避免 SSH 账号 PATH 未包含 /usr/local/bin。
+    DC="${DOCKER_PREFIX[*]:+${DOCKER_PREFIX[*]} }$target"
+}
+
+prepare_docker_environment() {
+    [ "$(uname -s)" = Linux ] || install_error '此部署脚本仅支持 Linux 服务器'
+    local installed=0 context=''
+    # 函数 docker 已定义，使用 type -P 检查真实客户端，避免把函数误当已安装。
+    if ! type -P docker >/dev/null 2>&1; then install_docker; installed=1; fi
+    docker --version || install_error 'Docker 客户端无法执行，请检查安装或 CPU 架构'
+    if ! docker info >/dev/null 2>&1; then
+        context=$(docker context show 2>/dev/null || true)
+        if [ -n "${DOCKER_HOST:-}" ] || [ -n "${DOCKER_CONTEXT:-}" ] || { [ -n "$context" ] && [ "$context" != default ]; }; then
+            docker info || true
+            install_error '当前 Docker 自定义/远程连接不可用，请检查连接配置和权限'
+        fi
+        require_install_root
+        DOCKER_PREFIX=("${INSTALL_ROOT[@]}")
+        if ! docker info >/dev/null 2>&1; then
+            if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+                install_as_root systemctl enable docker || install_error '设置 Docker 开机启动失败'
+                install_as_root systemctl start docker || install_error 'Docker 启动失败，请检查服务日志和 daemon.json'
+            elif command -v service >/dev/null 2>&1; then
+                install_as_root service docker start || install_error 'Docker 服务启动失败'
+            else
+                install_error '没有可用的服务管理器，请手动启动 Docker 后重试'
+            fi
+        fi
+    fi
+    if [ "$installed" = 1 ] && command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+        install_as_root systemctl enable docker || install_error '设置 Docker 开机启动失败'
+    fi
+    local attempt
+    for ((attempt=1; attempt<=30; attempt++)); do
+        if docker info >/dev/null 2>&1; then break; fi
+        sleep 1
+    done
+    docker info >/dev/null || install_error 'Docker 守护进程不可用，请检查服务日志和访问权限'
+    if select_compose; then return; fi
+    install_compose
+}
+
+prepare_docker_environment </dev/null
 
 export COMPOSE_PROJECT_NAME=xianyu-auto-reply
-DC_CMD="$DC -f $COMPOSE_FILE --env-file $ENV_FILE"
+# 数组保留路径中的空格；日志中的命令使用 Shell 转义，方便直接复制执行。
+read -r -a COMPOSE_COMMAND <<< "$DC"
+COMPOSE_COMMAND+=(-f "$COMPOSE_FILE" --env-file "$ENV_FILE")
+printf -v DC_CMD '%q ' "${COMPOSE_COMMAND[@]}"
+DC_CMD=${DC_CMD% }
 
 echo -e "${CYAN}[信息] Docker: $(docker --version)${NC}"
 echo -e "${CYAN}[信息] Compose: $DC${NC}"
@@ -108,6 +353,11 @@ REDIS_IMAGE=registry.cn-shanghai.aliyuncs.com/zhinian-software/xianyu-redis:7-al
 
 # 日志级别
 LOG_LEVEL=INFO
+
+# 在线安装：SSH 连接超时、脚本执行上限和任务日志保留期（秒）
+ONLINE_INSTALL_CONNECT_TIMEOUT=60
+ONLINE_INSTALL_TIMEOUT=7200
+ONLINE_INSTALL_RETENTION_SECONDS=86400
 
 # SQL 日志开关：true=打印每条执行的完整 SQL（便于排查）；默认 false，高并发生产环境建议保持关闭
 SQL_ECHO=false
@@ -258,6 +508,9 @@ services:
       - REDIS_STARTUP_RETRY_BASE_DELAY=${REDIS_STARTUP_RETRY_BASE_DELAY:-1}
       - REDIS_STARTUP_RETRY_CAP_DELAY=${REDIS_STARTUP_RETRY_CAP_DELAY:-10}
       - BACKEND_WEB_PORT=8089
+      - ONLINE_INSTALL_CONNECT_TIMEOUT=${ONLINE_INSTALL_CONNECT_TIMEOUT:-60}
+      - ONLINE_INSTALL_TIMEOUT=${ONLINE_INSTALL_TIMEOUT:-7200}
+      - ONLINE_INSTALL_RETENTION_SECONDS=${ONLINE_INSTALL_RETENTION_SECONDS:-86400}
       - HOST=0.0.0.0
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
@@ -470,6 +723,9 @@ COMPOSEEOF
 echo -e "${GREEN}✓ docker-compose.deploy.yml 已生成${NC}"
 echo ""
 
+# 在停止任何旧容器前验证配置，错误直接展示并终止。
+"${COMPOSE_COMMAND[@]}" config --quiet || install_error 'Compose 配置验证失败，请检查 .env 和 Docker Compose 版本'
+
 # ========== 检测并清理加密版残留 ==========
 ENC_CONTAINERS=(
     "xianyu-enc-frontend"
@@ -481,8 +737,9 @@ ENC_CONTAINERS=(
 )
 
 enc_found=0
+container_names=$(docker ps -a --format '{{.Names}}') || install_error '读取现有容器列表失败，已停止部署'
 for container in "${ENC_CONTAINERS[@]}"; do
-    if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+    if printf '%s\n' "$container_names" | grep -Fxq -- "$container"; then
         enc_found=1
         break
     fi
@@ -491,22 +748,25 @@ done
 if [ $enc_found -eq 1 ]; then
     echo -e "${YELLOW}[信息] 检测到加密版容器，清理中（保留数据卷）...${NC}"
     for container in "${ENC_CONTAINERS[@]}"; do
-        if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+        if printf '%s\n' "$container_names" | grep -Fxq -- "$container"; then
             echo -e "${CYAN}  停止并删除容器: ${container}${NC}"
-            docker stop "$container" 2>/dev/null || true
-            docker rm "$container" 2>/dev/null || true
+            docker stop "$container" || install_error "停止加密版容器 $container 失败，已停止部署"
+            docker rm "$container" || install_error "移除加密版容器 $container 失败，已停止部署"
         fi
     done
     # 清理加密版应用镜像
     for name in "xianyu-enc-frontend" "xianyu-enc-backend-web" "xianyu-enc-websocket" "xianyu-enc-scheduler"; do
-        image_ids=$(docker images --filter "reference=*/${name}*" --format '{{.ID}}' 2>/dev/null | sort -u)
+        image_ids=$(docker images --filter "reference=*/${name}" --format '{{.ID}}') || install_error '读取加密版应用镜像失败'
+        image_ids=$(printf '%s\n' "$image_ids" | sort -u)
         for id in $image_ids; do
-            docker rmi "$id" --force 2>/dev/null || true
+            docker rmi "$id" || echo "[提示] 加密版镜像 $id 未移除，可能仍被其他容器使用，继续部署"
         done
     done
-    # 清理加密版网络
-    for enc_network in $(docker network ls --format '{{.Name}}' | grep -i "enc" | grep -i "xianyu"); do
-        docker network rm "$enc_network" 2>/dev/null || true
+    # 按 Compose 项目标签清理，避免仅凭名称片段误删其他项目的网络。
+    enc_networks=$(docker network ls --filter 'label=com.docker.compose.project=xianyu_auto_reply_enc' --format '{{.Name}}') ||
+        install_error '读取加密版项目网络失败'
+    for enc_network in $enc_networks; do
+        docker network rm "$enc_network" || echo "[提示] 网络 $enc_network 未移除，可能仍在使用，继续部署"
     done
     echo -e "${GREEN}✓ 加密版已清理（数据卷已保留）${NC}"
     echo ""
@@ -525,23 +785,23 @@ mkdir -p \
 
 # ========== 部署 ==========
 echo -e "${YELLOW}步骤 1/3: 拉取最新镜像（旧容器保持运行，减少停机时间）...${NC}"
-$DC_CMD pull
+"${COMPOSE_COMMAND[@]}" pull
 echo -e "${GREEN}✓ 镜像拉取完成${NC}"
 
 echo ""
 echo -e "${YELLOW}步骤 2/3: 停止旧容器（仅本项目）...${NC}"
-$DC_CMD down 2>/dev/null || true
+"${COMPOSE_COMMAND[@]}" down || install_error '停止本项目旧容器失败，请检查 Docker 状态后重试'
 echo -e "${GREEN}✓ 旧容器已清理${NC}"
 
 echo ""
 echo -e "${YELLOW}步骤 3/3: 启动服务...${NC}"
-$DC_CMD up -d
+"${COMPOSE_COMMAND[@]}" up -d
 echo -e "${GREEN}✓ 服务已启动${NC}"
 
 echo ""
 echo "[信息] 等待服务启动..."
 sleep 15
-$DC_CMD ps
+"${COMPOSE_COMMAND[@]}" ps
 
 # 读取端口配置
 frontend_port=$(grep -E "^FRONTEND_PORT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2 | tr -d '\r' || echo "9000")
