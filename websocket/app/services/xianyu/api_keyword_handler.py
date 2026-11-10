@@ -9,17 +9,23 @@ from typing import Any
 from loguru import logger
 
 from app.services.xianyu.api_keyword_lock import api_keyword_order_lock
+from app.services.xianyu.api_keyword_trigger_guard import ApiKeywordTriggerGuard
 from app.services.xianyu.resource_manager import pause_manager
 from common.services.api_keyword_client import request_api_keyword
 from common.services.api_keyword_runtime import (
     API_DELIVERY_METADATA_KEY,
+    FULFILLED_ORDER_STATUSES,
     get_api_confirmation_order,
-    get_api_recovery_order,
     get_pending_api_order,
+    get_trigger_api_order,
     save_api_order_checkpoint,
     save_api_order_delivery,
 )
 from common.services.delivery_utils import is_shipping_result_ok
+
+
+class ApiKeywordDeliveryConflict(ValueError):
+    """订单已有发货结果的业务冲突，只记录原因与上下文，无需异常堆栈。"""
 
 
 class ApiKeywordHandler:
@@ -42,22 +48,46 @@ class ApiKeywordHandler:
         self.send_checked = False
         self.sent_segments: set[int] = set()
         self.signature = ""
+        self.trigger_guard = ApiKeywordTriggerGuard(reply_service, {}, buyer_id, item_id)
+
+    async def close(self) -> None:
+        """最终消息日志落库后释放触发保护，无参数和返回值。"""
+        await self.trigger_guard.close()
+
+    async def finalize_log(self, log_id: int | None) -> None:
+        """核对最终日志是否落库；成功回复写库失败时保留可恢复日志，防止再次调用API。"""
+        try:
+            await self.trigger_guard.finalize_log(log_id)
+        except Exception:
+            logger.exception("API关键词成功消息日志及恢复记录保存失败: account={}, buyer={}, item={}",
+                             self.service.cookie_id, self.buyer_id, self.item_id)
+            raise
 
     def _context(self, **values) -> None:
         """记录运行结果到现有自动回复日志上下文，供后台查看。"""
         if self.trace is not None:
             self.trace.setdefault("context_snapshot", {}).update(values)
 
-    async def _lookup_order(self, config, order_id=None):
-        """按所属用户、账号、买家及商品核对最新订单或指定订单。"""
-        return await get_pending_api_order(
+    async def _lookup_order(self, config, order_id=None, *, for_trigger: bool = False):
+        """按所属用户、账号、买家及商品核对订单，触发资格允许已发货及已完成。
+
+        Args:
+            config: 当前API配置，包含所属用户ID。
+            order_id: 可选的指定订单主键。
+            for_trigger: 是否只检查下单资格；默认仍只读取待发货订单供发货使用。
+        Returns:
+            符合对应状态要求的订单快照，没有符合条件的订单时返回None。
+        """
+        lookup = get_trigger_api_order if for_trigger else get_pending_api_order
+        return await lookup(
             config["owner_id"], self.service.cookie_id, self.buyer_id, self.item_id, order_id,
         )
 
-    async def _send(self, content: str) -> None:
+    async def _send(self, content: str, *, enforce_trigger: bool = False) -> None:
         """通过公共发送方法发送纯文本，不解释API返回的内部图片指令。"""
+        send_options = {"before_send": self.trigger_guard.ensure_owned} if enforce_trigger and self.trigger_guard.enabled else {}
         self.results.extend(await self.service._send_text_with_separator(
-            self.websocket, self.chat_id, self.buyer_id, content,
+            self.websocket, self.chat_id, self.buyer_id, content, **send_options,
         ))
 
     def _restore_checkpoint(self, current) -> None:
@@ -68,7 +98,7 @@ class ApiKeywordHandler:
                 raise ValueError("订单API发送检测进度格式异常，请核对发货记录")
             if (checkpoint.get("signature") != self.signature
                     or not isinstance(checkpoint.get("content"), str) or not checkpoint["content"].strip()):
-                raise ValueError("该订单已有其他API发货结果，请先核对原发货记录")
+                raise ApiKeywordDeliveryConflict("该订单已有其他API发货结果，请先核对原发货记录")
             self.content = checkpoint["content"]
             self.send_checked = bool(checkpoint.get("send_checked"))
             segments = checkpoint.get("sent_segments", [])
@@ -78,9 +108,9 @@ class ApiKeywordHandler:
             self.checkpoint_saved = True
             self._context(api_keyword_reused_result=True)
         elif current.get("card_only_delivered"):
-            raise ValueError("该订单已由其他发货流程处理，请先核对发货记录")
+            raise ApiKeywordDeliveryConflict("该订单已由其他发货流程处理，请先核对发货记录")
         elif str(current.get("delivery_content") or "").strip():
-            raise ValueError("该订单已有发货内容，请先核对原发货记录")
+            raise ApiKeywordDeliveryConflict("该订单已有发货内容，请先核对原发货记录")
 
     async def _pre_check(self, current) -> None:
         """复用自动发货拦截入口；下单限制分支在取API结果之前执行。"""
@@ -101,10 +131,12 @@ class ApiKeywordHandler:
 
     async def _request_and_send(self, config, message: str, ensure_owned=None) -> bool:
         """请求API、保存响应日志并发送；人工暂停或消息发送失败时停止后续确认。"""
+        await self.trigger_guard.ensure_owned()
         if ensure_owned is not None:
             await ensure_owned()
         if not self.content:
             self.content = await request_api_keyword(config, self.item_id, message)
+        await self.trigger_guard.ensure_owned()
         segments = self.service._build_text_reply_segments(self.content)
         if not segments:
             raise ValueError("API结果没有可发送的文本内容")
@@ -131,21 +163,26 @@ class ApiKeywordHandler:
             return True
         if not config["sync_confirm_delivery"]:
             # 普通API回复沿用公共发送的分段间隔；进度持久化仅用于同步发货分支。
-            await self._send(self.content)
+            await self.trigger_guard.ensure_owned()
+            await self._send(self.content, enforce_trigger=True)
             if not self.service._is_send_results_success(self.results):
                 raise ValueError(self.service._get_send_error_message(self.results) or "API结果发送失败")
+            if self.trigger_guard.enabled:
+                # 开启成功日志限制时，先等发送检测再落库，避免被拦截消息短暂占用次数。
+                await self._check_send_rejection()
             return True
         for segment in segments:
             if segment["index"] in self.sent_segments:
                 continue
             if self._confirmation_paused():
                 return False
+            await self.trigger_guard.ensure_owned()
             if ensure_owned is not None:
                 await ensure_owned()
                 if await self._lookup_order(config, self.order["id"]) is None:
                     raise ValueError("订单状态已变化，已停止发送API结果，请核对订单")
             start = len(self.results)
-            await self._send(segment["content"])
+            await self._send(segment["content"], enforce_trigger=True)
             current_results = self.results[start:]
             if not self.service._is_send_results_success(current_results):
                 raise ValueError(self.service._get_send_error_message(current_results) or "API结果发送失败")
@@ -226,6 +263,7 @@ class ApiKeywordHandler:
         """重新核对订单并调用既有免拼/确认发货；只有平台成功才保存为已发货。"""
         if self._confirmation_paused():
             return
+        await self.trigger_guard.ensure_owned()
         await ensure_owned()
         current = await get_api_confirmation_order(self.order)
         if current is None:
@@ -234,6 +272,7 @@ class ApiKeywordHandler:
         if handler is None:
             raise ValueError("自动发货服务未初始化，无法同步确认发货")
         await self._pre_check(current)
+        await self.trigger_guard.ensure_owned()
         await ensure_owned()
         current = await get_api_confirmation_order(self.order)
         if current is None:
@@ -242,7 +281,8 @@ class ApiKeywordHandler:
             return
         self.confirm_attempted = True
         # API关键词的同步开关是此规则的显式发货配置，覆盖账号只发卡券/同意后发货模式。
-        if current["is_bargain"] and current["status"] not in {"shipped", "completed"}:
+        if current["is_bargain"] and current["status"] not in FULFILLED_ORDER_STATUSES:
+            await self.trigger_guard.ensure_owned()
             free_result = await handler.auto_freeshipping(
                 current["order_no"], self.item_id, self.buyer_id, force=True,
             )
@@ -256,6 +296,7 @@ class ApiKeywordHandler:
             raise ValueError("订单状态已变化，已停止确认发货，请核对订单")
         if self._confirmation_paused():
             return
+        await self.trigger_guard.ensure_owned()
         confirm_result = await handler.auto_confirm(current["order_no"], self.item_id, force=True)
         self._context(api_keyword_confirm_result=confirm_result)
         if not is_shipping_result_ok(confirm_result):
@@ -275,15 +316,33 @@ class ApiKeywordHandler:
         return True
 
     async def _process_order(self, config, message, ensure_owned) -> None:
-        """持有共享订单锁时恢复结果、预检查、发送并确认，阶段结果落库后可安全重试。"""
+        """持锁处理符合下单资格的订单，待发货恢复并确认，已发货/已完成仅回复。
+
+        Args:
+            config: 当前API及同步确认发货配置。
+            message: 买家的完整触发消息。
+            ensure_owned: 检查订单锁仍有效的异步方法。
+        Returns:
+            无返回值；回复结果及处理上下文保存在当前处理实例中。
+        """
         current = await self._lookup_order(config, self.order["id"])
         if current is None:
             current = await get_api_confirmation_order(self.order)
             if current is None:
                 raise ValueError("订单已不处于待发货状态，请核对订单后重试")
         self.order = current
-        self._restore_checkpoint(current)
-        if current["status"] in {"shipped", "completed"}:
+        if current["status"] in FULFILLED_ORDER_STATUSES:
+            checkpoint = (current.get("metadata_json") or {}).get(API_DELIVERY_METADATA_KEY)
+            needs_recovery = bool(
+                checkpoint and current.get("card_only_delivered")
+                and not str(current.get("delivery_content") or "").strip()
+            )
+            if not needs_recovery:
+                # 已完成发货的订单仍具备下单资格，仅返回本次API结果，不覆盖原发货记录。
+                await self._request_and_send({**config, "sync_confirm_delivery": False}, message, ensure_owned)
+                self._context(api_keyword_delivery_skipped="订单已发货或已完成，仅回复API结果，跳过重复确认发货")
+                return
+            self._restore_checkpoint(current)
             if not self.checkpoint_saved or not self.send_checked:
                 raise ValueError("订单状态已变化，无法核实API结果完整发送，请核对发货记录")
             # 平台已发货但本地保存曾失败，只核实平台并补结果，禁止重新请求或发送。
@@ -292,6 +351,7 @@ class ApiKeywordHandler:
                                   decision_reason="reply_sent", send_status="success")
             await self._confirm(config, ensure_owned)
             return
+        self._restore_checkpoint(current)
         if config["trigger_after_order"]:
             await self._pre_check(current)
             await ensure_owned()
@@ -301,20 +361,23 @@ class ApiKeywordHandler:
             await self._confirm(config, ensure_owned)
 
     async def run(self, config: dict[str, Any], message: str) -> list[dict[str, Any]]:
-        """执行规则两个开关的组合，返回真实发送结果；失败给买家提示并写后台日志。"""
+        """先核对触发限制再执行API及发货，返回真实结果；失败给买家提示并写日志。"""
+        self.trigger_guard = ApiKeywordTriggerGuard(self.service, config, self.buyer_id, self.item_id)
         self._context(api_keyword_rule_id=config["id"],
                       api_keyword_trigger_after_order=config["trigger_after_order"],
-                      api_keyword_sync_confirm_delivery=config["sync_confirm_delivery"])
+                      api_keyword_sync_confirm_delivery=config["sync_confirm_delivery"],
+                      api_keyword_follow_order_quantity=config.get("follow_order_quantity", False),
+                      api_keyword_skip_same_message=config.get("skip_same_message", False))
         try:
-            self.signature = hashlib.sha256(json.dumps(config, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+            if not await self.trigger_guard.check(message):
+                return self.results
+            # 触发限制不改变API请求或发货配置，排除新开关可兼容升级前的订单恢复记录。
+            delivery_config = {key: value for key, value in config.items() if key not in {"follow_order_quantity", "skip_same_message"}}
+            self.signature = hashlib.sha256(json.dumps(delivery_config, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
             if config["trigger_after_order"]:
-                self.order = await self._lookup_order(config)
-                if self.order is None and config["sync_confirm_delivery"]:
-                    self.order = await get_api_recovery_order(
-                        config["owner_id"], self.service.cookie_id, self.buyer_id, self.item_id, self.signature,
-                    )
+                self.order = await self._lookup_order(config, for_trigger=True)
                 if self.order is None:
-                    raise ValueError("未找到您在该商品下的待发货订单，请先下单并完成付款")
+                    raise ValueError("未找到您在该商品下的有效订单（待发货、已发货或已完成），请先下单并完成付款")
                 self._context(api_keyword_order_no=self.order["order_no"])
                 if self.trace is not None:
                     self.trace["order_no"] = self.order["order_no"]
@@ -346,9 +409,12 @@ class ApiKeywordHandler:
             else:
                 await self._request_and_send(config, message)
         except Exception as exc:  # noqa: BLE001
-            logger.exception("API关键词执行失败: account={}, buyer={}, item={}, rule_id={}",
-                             self.service.cookie_id, self.buyer_id, self.item_id, config["id"])
             error = str(exc)
+            logger.opt(exception=not isinstance(exc, ApiKeywordDeliveryConflict)).error(
+                "API关键词执行失败: account={}, buyer={}, item={}, rule_id={}, order_no={}, error_type={}, error={}",
+                self.service.cookie_id, self.buyer_id, self.item_id, config["id"],
+                (self.order or {}).get("order_no"), type(exc).__name__, error,
+            )
             self._context(api_keyword_error=error)
             if self.trace is not None:
                 self.trace["_api_keyword_error"] = error
