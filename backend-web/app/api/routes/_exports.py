@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from . import (
     activation,
     admin,
+    admin_users,
     admin_settlements,
     advertisements,
     ai,
@@ -89,6 +90,8 @@ from . import (
     upload,
     user_settings,
     user_login_logs,
+    registration_logs,
+    security_management,
     users,
     version,
 )
@@ -171,12 +174,15 @@ api_router.include_router(advertisements.router, prefix="/advertisements", tags=
 api_router.include_router(auto_reply_logs.router, tags=["消息日志"])
 api_router.include_router(account_login_logs.router, tags=["账号登录日志"])
 api_router.include_router(user_login_logs.router, tags=["用户登录日志"])
+api_router.include_router(security_management.router, tags=["安全日志与安全任务"])
+api_router.include_router(registration_logs.router, tags=["注册日志"])
 api_router.include_router(email_logs.router, tags=["邮件日志"])
 api_router.include_router(db_backup_logs.router, tags=["数据库备份日志"])
 api_router.include_router(risk_control_logs.router, tags=["风控日志"])
 
 # 管理员功能
 api_router.include_router(admin.router, prefix="/admin", tags=["管理员功能"])
+api_router.include_router(admin_users.router, prefix="/admin", tags=["管理员功能"])
 api_router.include_router(admin_settlements.router, prefix="/admin", tags=["管理员功能"])
 api_router.include_router(cookies_refresh_logs.router, prefix="/admin", tags=["COOKIES刷新日志"])
 api_router.include_router(api_cookie_renew_logs.router, prefix="/admin", tags=["接口续期Cookies日志"])
