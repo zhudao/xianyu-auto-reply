@@ -4,9 +4,17 @@ from __future__ import annotations
 from sqlalchemy import select, update
 
 from common.db.idempotent_insert import insert_defaults
-from common.models.security_task import SECURITY_INTERVAL_SECONDS, SECURITY_TASK_CODE, SecurityTask
+from common.models.scheduled_task import ScheduledTask
+from common.models.security_task import (
+    SECURITY_INTERVAL_SECONDS,
+    SECURITY_TASK_CODE,
+    SecurityTask,
+)
 from common.models.system_setting import SystemSetting
-from common.services.auth_security_policy import AUTH_SECURITY_DEFAULTS, AUTH_SECURITY_GROUP
+from common.services.auth_security_policy import (
+    AUTH_SECURITY_DEFAULTS,
+    AUTH_SECURITY_GROUP,
+)
 from common.utils.time_utils import get_beijing_now_naive
 
 
@@ -27,13 +35,22 @@ async def ensure_security_defaults(connection) -> None:
     now = get_beijing_now_naive()
     await insert_defaults(connection, SecurityTask.__table__, {
         'task_code': SECURITY_TASK_CODE, 'interval_seconds': SECURITY_INTERVAL_SECONDS, 'config_version': 0,
-        'next_run_at': now, 'created_at': now, 'updated_at': now,
+        'enabled': False, 'next_run_at': None, 'created_at': now, 'updated_at': now,
     }, ('task_code',))
     for key, (value, description) in AUTH_SECURITY_DEFAULTS.items():
         await insert_defaults(connection, SystemSetting.__table__, {
             'key': key, 'value': value, 'description': description,
             'group': AUTH_SECURITY_GROUP, 'updated_at': now,
         }, ('key',))
+
+
+async def lock_security_schedule(session) -> ScheduledTask:
+    """安全状态锁取得后当前读原任务配置；唯一的运行开关来自原定时任务表。"""
+    task = (await session.execute(select(ScheduledTask).where(ScheduledTask.task_code == SECURITY_TASK_CODE)
+        .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+    if task is None:
+        raise RuntimeError('安全频率限制尚未接入定时任务表，请检查启动自检结果')
+    return task
 
 
 async def save_security_values(session, task: SecurityTask, changes: dict[str, str]) -> None:
